@@ -1,0 +1,87 @@
+<section class="upload-layout">
+  <article class="panel panel--form">
+    <div class="panel__header">
+      <p class="panel__label">Create link</p>
+      <h2>Upload a file and define the kill switch.</h2>
+      <p>
+        Set the expiration timestamp, cap the number of downloads, and publish a share link that can disappear on
+        schedule.
+      </p>
+    </div>
+
+    <div class="form-grid">
+      <label class="field field--file">
+        <span>File</span>
+        <input type="file" (change)="onFileSelected($event)" />
+        <small>{{ selectedFile()?.name || 'No file selected yet.' }}</small>
+      </label>
+
+      <label class="field">
+        <span>Expires at</span>
+        <input
+          type="datetime-local"
+          [ngModel]="expiresAt()"
+          (ngModelChange)="expiresAt.set($event)"
+        />
+      </label>
+
+      <label class="field">
+        <span>Max downloads</span>
+        <input
+          type="number"
+          min="1"
+          [ngModel]="maxDownloads()"
+          (ngModelChange)="onMaxDownloadsChange($event)"
+        />
+      </label>
+    </div>
+
+    <button class="cta" type="button" [disabled]="isSubmitting()" (click)="submit()">
+      {{ isSubmitting() ? 'Generating...' : 'Generate temporary link' }}
+    </button>
+
+    @if (error()) {
+      <p class="feedback feedback--error">{{ error() }}</p>
+    }
+  </article>
+
+  <aside class="panel panel--result">
+    <div class="panel__header">
+      <p class="panel__label">Result</p>
+      <h2>Link payload</h2>
+      <p>The API response is surfaced here exactly where the frontend needs it.</p>
+    </div>
+
+    @if (response(); as response) {
+      <dl class="result-grid">
+        <div>
+          <dt>Access token</dt>
+          <dd>{{ response.accessToken }}</dd>
+        </div>
+        <div>
+          <dt>Expires at</dt>
+          <dd>{{ response.expiresAt | date: 'medium' }}</dd>
+        </div>
+        <div>
+          <dt>Max downloads</dt>
+          <dd>{{ response.maxDownloads ?? 'Unlimited' }}</dd>
+        </div>
+        <div>
+          <dt>File</dt>
+          <dd>{{ response.fileName }}</dd>
+        </div>
+      </dl>
+
+      <div class="link-stack">
+        <a [href]="response.downloadUrl" target="_blank" rel="noreferrer">Direct download endpoint</a>
+        <a [routerLink]="downloadPreviewPath()">Public download page</a>
+        <a [href]="response.metadataUrl" target="_blank" rel="noreferrer">Metadata endpoint</a>
+        <a [href]="response.availabilityUrl" target="_blank" rel="noreferrer">Availability endpoint</a>
+      </div>
+    } @else {
+      <div class="placeholder">
+        <p>Your generated link and endpoint URLs will appear here after the upload completes.</p>
+      </div>
+    }
+  </aside>
+</section>

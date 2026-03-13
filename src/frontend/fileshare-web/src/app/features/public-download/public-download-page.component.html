@@ -1,0 +1,50 @@
+<section class="download-layout">
+  <a class="back-link" routerLink="/">Back to upload</a>
+
+  @if (isLoading()) {
+    <article class="card card--state">
+      <p>Loading link details...</p>
+    </article>
+  } @else if (error()) {
+    <article class="card card--state">
+      <p class="state-title">Link unavailable</p>
+      <p>{{ error() }}</p>
+    </article>
+  } @else {
+    <article class="card card--summary">
+      <p class="card__eyebrow">Public link</p>
+      <h2>{{ metadata()?.fileName }}</h2>
+
+      <dl class="summary-grid">
+        <div>
+          <dt>Status</dt>
+          <dd>{{ availability()?.status }}</dd>
+        </div>
+        <div>
+          <dt>Content type</dt>
+          <dd>{{ metadata()?.contentType }}</dd>
+        </div>
+        <div>
+          <dt>Size</dt>
+          <dd>{{ metadata()?.size | number }} bytes</dd>
+        </div>
+        <div>
+          <dt>Downloads</dt>
+          <dd>{{ availability()?.downloadCount ?? 0 }} / {{ availability()?.maxDownloads ?? 'unlimited' }}</dd>
+        </div>
+        <div>
+          <dt>Expires at</dt>
+          <dd>{{ metadata()?.expiresAt | date: 'medium' }}</dd>
+        </div>
+      </dl>
+
+      @if (availability()?.reason) {
+        <p class="reason">{{ availability()?.reason }}</p>
+      }
+
+      <button class="download-action" type="button" [disabled]="!availability()?.available" (click)="download()">
+        {{ availability()?.available ? 'Download file' : 'Link not available' }}
+      </button>
+    </article>
+  }
+</section>

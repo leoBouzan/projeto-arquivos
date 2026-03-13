@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/backend/">
+    <Project Path="src/backend/FileShare.API/FileShare.API.csproj" />
+    <Project Path="src/backend/FileShare.Application/FileShare.Application.csproj" />
+    <Project Path="src/backend/FileShare.Contracts/FileShare.Contracts.csproj" />
+    <Project Path="src/backend/FileShare.Domain/FileShare.Domain.csproj" />
+    <Project Path="src/backend/FileShare.Infrastructure/FileShare.Infrastructure.csproj" />
+    <Project Path="src/backend/FileShare.Worker/FileShare.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FileShare.API.IntegrationTests/FileShare.API.IntegrationTests.csproj" />
+    <Project Path="tests/FileShare.Application.Tests/FileShare.Application.Tests.csproj" />
+    <Project Path="tests/FileShare.Domain.Tests/FileShare.Domain.Tests.csproj" />
+    <Project Path="tests/FileShare.Infrastructure.IntegrationTests/FileShare.Infrastructure.IntegrationTests.csproj" />
+    <Project Path="tests/FileShare.Worker.Tests/FileShare.Worker.Tests.csproj" />
+  </Folder>
+</Solution>

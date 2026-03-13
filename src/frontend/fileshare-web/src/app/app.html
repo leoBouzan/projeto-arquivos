@@ -1,0 +1,19 @@
+<div class="app-shell">
+  <header class="hero">
+    <div class="hero__content">
+      <p class="hero__eyebrow">Temporary file links</p>
+      <h1>FileShare</h1>
+      <p class="hero__copy">
+        Upload once, define the expiration rules, and publish a disposable link that cleans itself up.
+      </p>
+    </div>
+
+    <nav class="hero__nav">
+      <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Upload</a>
+    </nav>
+  </header>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>
