@@ -4,10 +4,21 @@ import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { FilesApiService } from '../../core/api/files-api.service';
+import { ToastService } from '../../core/services/toast.service';
 import { UploadFileResponse } from '../../shared/models/file-contracts';
 import { AppIconComponent } from '../../shared/ui/app-icon.component';
 import { CopyFieldComponent } from '../../shared/ui/copy-field.component';
+import {
+  CryptoPaymentModalComponent,
+  PaymentCurrency,
+  PaymentPlan
+} from '../../shared/ui/crypto-payment-modal.component';
 import { FloatingBackgroundComponent } from '../../shared/ui/floating-background.component';
+import {
+  ProofOfTransferComponent,
+  ProofRecord,
+  proofFromBackend
+} from '../../shared/ui/proof-of-transfer.component';
 import { ShareAnimationComponent } from '../../shared/ui/share-animation.component';
 import { StatusBadgeComponent } from '../../shared/ui/status-badge.component';
 
@@ -23,6 +34,9 @@ interface RecentLinkItem {
 }
 
 const RECENT_LINKS_STORAGE_KEY = 'fileshare.recent-links.v1';
+const FREE_TIER_MAX_BYTES = 50 * 1024 * 1024;
+const PRO_TIER_MAX_BYTES = 5 * 1024 * 1024 * 1024;
+const UNLOCKED_PLAN_STORAGE_KEY = 'fileshare.unlocked-plan.v1';
 
 @Component({
   selector: 'app-upload-page',
@@ -33,13 +47,16 @@ const RECENT_LINKS_STORAGE_KEY = 'fileshare.recent-links.v1';
     StatusBadgeComponent,
     ShareAnimationComponent,
     CopyFieldComponent,
-    FloatingBackgroundComponent
+    FloatingBackgroundComponent,
+    CryptoPaymentModalComponent,
+    ProofOfTransferComponent
   ],
   templateUrl: './upload-page.component.html',
   styleUrl: './upload-page.component.scss'
 })
 export class UploadPageComponent implements OnDestroy {
   private readonly filesApi = inject(FilesApiService);
+  private readonly toast = inject(ToastService);
   private resetCopyFeedbackTimeout: ReturnType<typeof setTimeout> | null = null;
   private previewObjectUrl: string | null = null;
 
@@ -54,7 +71,39 @@ export class UploadPageComponent implements OnDestroy {
   protected readonly responseCreatedAt = signal<number | null>(null);
   protected readonly copyFeedback = signal<string | null>(null);
   protected readonly recentLinks = signal<RecentLinkItem[]>(this.loadRecentLinks());
-  protected readonly canSubmit = computed(() => Boolean(this.selectedFile()) && !this.isSubmitting());
+  protected readonly unlockedPlan = signal<PaymentPlan | null>(this.loadUnlockedPlan());
+  protected readonly paymentTxHash = signal<string | null>(null);
+  protected readonly paymentCurrency = signal<PaymentCurrency | null>(null);
+  protected readonly showPaymentModal = signal(false);
+  protected readonly requiredPlan = signal<PaymentPlan>('pro');
+  protected readonly proof = signal<ProofRecord | null>(null);
+  protected readonly password = signal<string>('');
+  protected readonly passwordEnabled = signal<boolean>(false);
+
+  protected readonly requiresUpgrade = computed(() => {
+    const file = this.selectedFile();
+    if (!file) return false;
+    return file.size > FREE_TIER_MAX_BYTES && !this.unlockedPlan();
+  });
+
+  protected readonly currentTier = computed<'free' | PaymentPlan>(() => this.unlockedPlan() ?? 'free');
+
+  protected readonly tierLabel = computed(() => {
+    switch (this.currentTier()) {
+      case 'pro': return 'Pro';
+      case 'business': return 'Business';
+      default: return 'Free';
+    }
+  });
+
+  protected readonly selectedSizeMb = computed(() => {
+    const file = this.selectedFile();
+    return file ? file.size / (1024 * 1024) : 0;
+  });
+
+  protected readonly canSubmit = computed(() =>
+    Boolean(this.selectedFile()) && !this.isSubmitting() && !this.requiresUpgrade()
+  );
   protected readonly selectedFileTypeLabel = computed(() => this.getFileTypeLabel(this.selectedFile()));
   protected readonly selectedFileExtension = computed(() => this.getFileExtension(this.selectedFile()));
   protected readonly selectedFileIcon = computed(() => this.getFileIconName(this.selectedFile()));
@@ -162,10 +211,22 @@ export class UploadPageComponent implements OnDestroy {
       return;
     }
 
+    if (file.size > FREE_TIER_MAX_BYTES && !this.unlockedPlan()) {
+      this.openPaymentModal();
+      return;
+    }
+
+    if (file.size > PRO_TIER_MAX_BYTES && this.unlockedPlan() !== 'business') {
+      this.requiredPlan.set('business');
+      this.showPaymentModal.set(true);
+      return;
+    }
+
     this.isSubmitting.set(true);
     this.error.set(null);
     this.response.set(null);
     this.responseCreatedAt.set(null);
+    this.proof.set(null);
 
     const formData = new FormData();
     formData.append('file', file);
@@ -174,6 +235,11 @@ export class UploadPageComponent implements OnDestroy {
     const maxDownloads = this.maxDownloads();
     if (maxDownloads !== null) {
       formData.append('maxDownloads', maxDownloads.toString());
+    }
+
+    const password = this.passwordEnabled() ? this.password().trim() : '';
+    if (password) {
+      formData.append('password', password);
     }
 
     this.filesApi
@@ -185,17 +251,53 @@ export class UploadPageComponent implements OnDestroy {
           this.responseCreatedAt.set(Date.now());
           this.addRecentLink(response);
           this.error.set(null);
+          const record = proofFromBackend(file, response.proof, this.paymentTxHash() ?? undefined);
+          this.proof.set(record);
+          this.toast.success('Link ready', `${response.fileName} is live with a proof certificate.`);
         },
         error: (error) => {
-          this.error.set(error?.error?.detail ?? 'The upload could not be completed.');
+          const detail = error?.error?.detail ?? error?.error?.title ?? 'The upload could not be completed.';
+          this.error.set(detail);
+          this.toast.error('Upload failed', detail);
         }
       });
+  }
+
+  protected openPaymentModal(): void {
+    const file = this.selectedFile();
+    const requiresBusiness = file && file.size > PRO_TIER_MAX_BYTES;
+    this.requiredPlan.set(requiresBusiness ? 'business' : 'pro');
+    this.showPaymentModal.set(true);
+  }
+
+  protected onPaymentClosed(): void {
+    this.showPaymentModal.set(false);
+  }
+
+  protected onPaymentConfirmed(detail: { plan: PaymentPlan; txHash: string; currency: PaymentCurrency }): void {
+    this.unlockedPlan.set(detail.plan);
+    this.paymentTxHash.set(detail.txHash);
+    this.paymentCurrency.set(detail.currency);
+    this.saveUnlockedPlan(detail.plan);
+    this.showPaymentModal.set(false);
+    this.toast.success(`${detail.plan === 'pro' ? 'Pro' : 'Business'} unlocked`, 'Proceeding with your upload...');
+    setTimeout(() => this.submit(), 200);
+  }
+
+  protected downgradeToFree(): void {
+    this.unlockedPlan.set(null);
+    this.paymentTxHash.set(null);
+    this.paymentCurrency.set(null);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(UNLOCKED_PLAN_STORAGE_KEY);
+    }
   }
 
   protected resetGeneratedResult(fileInput: HTMLInputElement): void {
     this.response.set(null);
     this.responseCreatedAt.set(null);
     this.error.set(null);
+    this.proof.set(null);
     this.removeSelectedFile(fileInput);
   }
 
@@ -402,6 +504,23 @@ export class UploadPageComponent implements OnDestroy {
     }
 
     localStorage.setItem(RECENT_LINKS_STORAGE_KEY, JSON.stringify(links));
+  }
+
+  private loadUnlockedPlan(): PaymentPlan | null {
+    if (typeof localStorage === 'undefined') return null;
+    const raw = localStorage.getItem(UNLOCKED_PLAN_STORAGE_KEY);
+    if (raw === 'pro' || raw === 'business') return raw;
+    return null;
+  }
+
+  private saveUnlockedPlan(plan: PaymentPlan): void {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(UNLOCKED_PLAN_STORAGE_KEY, plan);
+  }
+
+  protected togglePassword(enabled: boolean): void {
+    this.passwordEnabled.set(enabled);
+    if (!enabled) this.password.set('');
   }
 
   private formatTimeLeft(expiresAtValue: string): string {

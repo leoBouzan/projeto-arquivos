@@ -6,17 +6,17 @@
     <div class="hero__text">
       <p class="hero__eyebrow reveal" #reveal>
         <span class="eyebrow-dot"></span>
-        Ephemeral file sharing
+        File sharing with cryptographic receipts
       </p>
 
       <h1 class="hero__headline reveal reveal-delay-1" #reveal>
         Share files with<br>
-        <span class="headline-accent">controlled access</span>
+        <span class="headline-accent">Proof of Transfer</span>
       </h1>
 
       <p class="hero__subline reveal reveal-delay-2" #reveal>
-        Upload once. Set expiration and download limits.
-        Get a secure temporary link — no accounts required.
+        Every transfer comes with a signed certificate — hash, timestamp and ledger block —
+        so you can <strong>prove what was sent, when, and to whom</strong>.
       </p>
 
       <div class="hero__actions reveal reveal-delay-3" #reveal>
@@ -37,18 +37,18 @@
 
       <div class="hero__stats reveal reveal-delay-4" #reveal>
         <div class="stat">
-          <span class="stat__value">100%</span>
-          <span class="stat__label">Temporary</span>
+          <span class="stat__value">SHA-256</span>
+          <span class="stat__label">Verified</span>
         </div>
         <div class="stat__sep"></div>
         <div class="stat">
-          <span class="stat__value">0</span>
-          <span class="stat__label">Accounts</span>
+          <span class="stat__value">Ed25519</span>
+          <span class="stat__label">Signed</span>
         </div>
         <div class="stat__sep"></div>
         <div class="stat">
-          <span class="stat__value">∞</span>
-          <span class="stat__label">File types</span>
+          <span class="stat__value">&lt;2s</span>
+          <span class="stat__label">To receipt</span>
         </div>
       </div>
     </div>
@@ -275,6 +275,120 @@
           <button class="preview-copy-btn" tabindex="-1">Copy</button>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Proof of Transfer (differentiator) ───────────────────── -->
+<section class="section section--proof" id="proof-of-transfer">
+  <div class="section__inner">
+    <div class="section__header reveal" #reveal>
+      <p class="section__eyebrow">Differentiator</p>
+      <h2 class="section__title">Proof of Transfer</h2>
+      <p class="section__sub">
+        We don't just move files — we issue a cryptographic receipt for each transfer,
+        so integrity and timestamp are verifiable by anyone, forever.
+      </p>
+    </div>
+
+    <div class="proof-showcase">
+      <div class="proof-steps reveal reveal-delay-1" #reveal>
+        @for (step of proofSteps; track step.number) {
+          <div class="proof-step">
+            <div class="proof-step__num">{{ step.number }}</div>
+            <div>
+              <h3 class="proof-step__title">{{ step.title }}</h3>
+              <p class="proof-step__desc">{{ step.description }}</p>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="proof-preview reveal reveal-delay-2" #reveal>
+        <div class="proof-preview__glow"></div>
+        <article class="proof-preview__card">
+          <header class="proof-preview__head">
+            <div class="proof-preview__seal" aria-hidden="true">
+              <svg viewBox="0 0 32 32" fill="none">
+                <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="1.2" opacity="0.4"/>
+                <circle cx="16" cy="16" r="10" stroke="currentColor" stroke-width="1.2" opacity="0.7"/>
+                <path d="M10 16l4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div>
+              <p class="proof-preview__eyebrow">Proof of Transfer</p>
+              <p class="proof-preview__title">Verified certificate</p>
+            </div>
+            <span class="proof-preview__badge">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M4 8.5l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Verified
+            </span>
+          </header>
+
+          <div class="proof-preview__rows">
+            <div class="proof-preview__row"><span>File</span><code>contract-v3.pdf</code></div>
+            <div class="proof-preview__row"><span>SHA-256</span><code>a1b4e9c7…9f2d1a</code></div>
+            <div class="proof-preview__row"><span>Block</span><code>#2487342</code></div>
+            <div class="proof-preview__row"><span>Signature</span><code>7c3d2e…f8a3b9</code></div>
+            <div class="proof-preview__row"><span>Timestamp</span><code>2026-04-17 14:32 UTC</code></div>
+          </div>
+
+          <div class="proof-preview__ledger">
+            <span class="proof-preview__dot"></span>
+            Ledger #4 · 12 nodes attested
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Pricing ──────────────────────────────────────────────── -->
+<section class="section section--pricing" id="pricing">
+  <div class="section__inner">
+    <div class="section__header reveal" #reveal>
+      <p class="section__eyebrow">Pricing</p>
+      <h2 class="section__title">Pay for what you send</h2>
+      <p class="section__sub">Crypto-native checkout. No credit card, no recurring surprises.</p>
+    </div>
+
+    <div class="plans">
+      @for (plan of plans; track plan.id; let i = $index) {
+        <article class="plan reveal" [class.plan--highlight]="plan.highlight" [class]="'reveal-delay-' + (i + 1)" #reveal>
+          @if (plan.highlight) {
+            <span class="plan__flag">Most popular</span>
+          }
+          <p class="plan__name">{{ plan.name }}</p>
+          <p class="plan__tagline">{{ plan.tagline }}</p>
+          <div class="plan__price">
+            <span class="plan__price-value">{{ plan.price }}</span>
+            <span class="plan__price-period">{{ plan.period }}</span>
+          </div>
+          <ul class="plan__features">
+            @for (f of plan.features; track f.text) {
+              <li [class.plan__feat--off]="!f.enabled">
+                @if (f.enabled) {
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                } @else {
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                }
+                {{ f.text }}
+              </li>
+            }
+          </ul>
+          <a class="plan__cta" routerLink="/upload">
+            {{ plan.cta }}
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <p class="plan__hint">{{ plan.ctaHint }}</p>
+        </article>
+      }
     </div>
   </div>
 </section>

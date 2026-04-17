@@ -11,4 +11,7 @@ public sealed class UploadFileForm
     public DateTimeOffset ExpiresAt { get; init; }
 
     public int? MaxDownloads { get; init; }
+
+    [StringLength(128, MinimumLength = 4)]
+    public string? Password { get; init; }
 }

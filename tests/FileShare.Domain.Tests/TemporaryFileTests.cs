@@ -34,6 +34,7 @@ public sealed class TemporaryFileTests
         var accessToken = AccessToken.Generate();
         var storageKey = StorageObjectKey.Create("temporary-files/test/file.txt").Value;
         var expirationPolicy = ExpirationPolicy.Create(expiresAt, maxDownloads, createdAt.AddSeconds(-1)).Value;
+        var proof = TransferProof.Create(new string('a', 64), createdAt).Value;
         return TemporaryFile.Create(
             Guid.NewGuid(),
             "file.txt",
@@ -42,6 +43,7 @@ public sealed class TemporaryFileTests
             storageKey,
             accessToken,
             expirationPolicy,
+            proof,
             createdAt).Value;
     }
 }

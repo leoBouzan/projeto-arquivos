@@ -12,6 +12,8 @@ public interface IFileRepository
 
     Task<TemporaryFile?> GetByAccessTokenAsync(string accessToken, CancellationToken cancellationToken);
 
+    Task<TemporaryFile?> GetByFileHashPrefixAsync(string fileHashPrefix, CancellationToken cancellationToken);
+
     Task<IReadOnlyList<TemporaryFile>> GetExpiredBatchAsync(DateTimeOffset now, int batchSize, CancellationToken cancellationToken);
 
     Task<IReadOnlyList<TemporaryFile>> GetPendingCleanupBatchAsync(int batchSize, CancellationToken cancellationToken);

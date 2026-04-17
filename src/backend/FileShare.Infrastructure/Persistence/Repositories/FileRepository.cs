@@ -33,6 +33,18 @@ public sealed class FileRepository : IFileRepository
         return _dbContext.TemporaryFiles.FirstOrDefaultAsync(x => x.AccessToken == accessToken, cancellationToken);
     }
 
+    public async Task<TemporaryFile?> GetByFileHashPrefixAsync(string fileHashPrefix, CancellationToken cancellationToken)
+    {
+        var matches = await _dbContext.TemporaryFiles
+            .Where(x => x.FileHash.StartsWith(fileHashPrefix))
+            .Take(10)
+            .ToListAsync(cancellationToken);
+
+        return matches
+            .OrderByDescending(x => x.CreatedAt)
+            .FirstOrDefault();
+    }
+
     public async Task<IReadOnlyList<TemporaryFile>> GetExpiredBatchAsync(DateTimeOffset now, int batchSize, CancellationToken cancellationToken)
     {
         var candidates = await _dbContext.TemporaryFiles

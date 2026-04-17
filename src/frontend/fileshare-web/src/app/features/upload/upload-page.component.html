@@ -90,9 +90,41 @@
     <div class="workspace">
       <!-- Upload form card -->
       <article class="card fade-in fade-in--delay-1">
-        <div class="card__header">
-          <p class="eyebrow">Create secure link</p>
-          <h3 class="card__title">Upload and configure access</h3>
+        <!-- Hero gradient header -->
+        <div class="card__hero">
+          <div class="card__hero-bg" aria-hidden="true"></div>
+          <div class="card__hero-content">
+            <div>
+              <p class="card__hero-eyebrow">Create secure link</p>
+              <h3 class="card__hero-title">Upload & share with proof</h3>
+              <p class="card__hero-sub">
+                Every transfer gets a cryptographic receipt. Optionally password-protect.
+              </p>
+            </div>
+            <div class="tier-chip" [class.tier-chip--paid]="unlockedPlan()">
+              <span class="tier-chip__dot"></span>
+              {{ tierLabel() }}
+              @if (unlockedPlan()) {
+                <button type="button" class="tier-chip__reset" (click)="downgradeToFree()" title="Reset to Free" aria-label="Reset to Free">×</button>
+              }
+            </div>
+          </div>
+
+          <!-- Stepper -->
+          <ol class="stepper">
+            <li class="stepper__item stepper__item--active">
+              <span class="stepper__num">1</span>
+              <span class="stepper__label">Select file</span>
+            </li>
+            <li class="stepper__item" [class.stepper__item--active]="selectedFile()">
+              <span class="stepper__num">2</span>
+              <span class="stepper__label">Configure</span>
+            </li>
+            <li class="stepper__item" [class.stepper__item--active]="response()">
+              <span class="stepper__num">3</span>
+              <span class="stepper__label">Share + Proof</span>
+            </li>
+          </ol>
         </div>
 
         <!-- File input -->
@@ -115,6 +147,11 @@
             (keydown.enter)="fileInput.click()"
             (keydown.space)="fileInput.click(); $event.preventDefault()"
           >
+            @if (!selectedFile()) {
+              <span class="dropzone__orb dropzone__orb--1" aria-hidden="true"></span>
+              <span class="dropzone__orb dropzone__orb--2" aria-hidden="true"></span>
+              <span class="dropzone__orb dropzone__orb--3" aria-hidden="true"></span>
+            }
             <div class="dropzone__inner">
               <div class="dropzone__icon-wrap" [class.dropzone__icon-wrap--filled]="selectedFile()">
                 <app-icon [name]="selectedFile() ? selectedFileIcon() : 'upload'" />
@@ -198,6 +235,43 @@
           </label>
         </div>
 
+        <!-- Password protection -->
+        <div class="password-block">
+          <div class="password-block__toggle">
+            <label class="switch">
+              <input
+                type="checkbox"
+                [checked]="passwordEnabled()"
+                (change)="togglePassword($any($event.target).checked)"
+              />
+              <span class="switch__track"></span>
+            </label>
+            <div>
+              <p class="password-block__title">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M5 9V7a5 5 0 0 1 10 0v2M4 9h12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Password protection
+              </p>
+              <p class="password-block__sub">
+                Only recipients with the password can download. The password is never stored in plain text.
+              </p>
+            </div>
+          </div>
+
+          @if (passwordEnabled()) {
+            <input
+              class="password-input slide-in"
+              type="password"
+              placeholder="Choose a password (min 4 chars)"
+              minlength="4"
+              maxlength="128"
+              [ngModel]="password()"
+              (ngModelChange)="password.set($event)"
+            />
+          }
+        </div>
+
         <!-- Config summary -->
         @if (selectedFile()) {
           <div class="config-summary slide-in">
@@ -213,6 +287,24 @@
           </div>
         }
 
+        @if (requiresUpgrade()) {
+          <div class="upgrade-banner slide-in">
+            <div class="upgrade-banner__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zM4 7l8 5 8-5M12 12v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="upgrade-banner__body">
+              <p class="upgrade-banner__title">File exceeds Free tier ({{ selectedSizeMb().toFixed(1) }} MB / 50 MB)</p>
+              <p class="upgrade-banner__sub">Unlock Pro with a one-time crypto payment (simulation) — $9/mo, up to 5 GB.</p>
+            </div>
+            <button type="button" class="upgrade-banner__btn" (click)="openPaymentModal()">
+              Upgrade
+              <svg viewBox="0 0 20 20" fill="none"><path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        }
+
         <!-- CTA -->
         <button
           class="cta-btn"
@@ -223,10 +315,13 @@
         >
           @if (isSubmitting()) {
             <span class="spinner" aria-hidden="true"></span>
-            Generating link...
+            Generating link + proof...
+          } @else if (requiresUpgrade()) {
+            <app-icon name="link" />
+            Upgrade to share this file
           } @else {
             <app-icon name="link" />
-            Generate temporary link
+            Generate secure link + proof
           }
         </button>
 
@@ -258,6 +353,46 @@
           </div>
         } @else if (response(); as res) {
           <div class="result slide-in">
+            <!-- Success banner -->
+            <div class="success-banner">
+              <div class="success-banner__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                  <path d="m8 12 3 3 5-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <div>
+                <p class="success-banner__title">Link generated successfully</p>
+                <p class="success-banner__sub">Your file is live with a Proof of Transfer certificate.</p>
+              </div>
+            </div>
+
+            <!-- Security chips -->
+            <div class="sec-chips">
+              <span class="sec-chip sec-chip--proof">
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M4 8.5l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Proof of Transfer
+              </span>
+              @if (res.hasPassword) {
+                <span class="sec-chip sec-chip--password">
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M4.5 7.5V6a3.5 3.5 0 0 1 7 0v1.5M3.5 7.5h9v6a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5v-6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                  </svg>
+                  Password protected
+                </span>
+              }
+              @if (unlockedPlan()) {
+                <span class="sec-chip sec-chip--tier">
+                  <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M8 1 2 4v5c0 3 2.5 5.5 6 6 3.5-0.5 6-3 6-6V4L8 1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                  </svg>
+                  {{ tierLabel() }} plan
+                </span>
+              }
+            </div>
+
             <!-- File summary -->
             <div class="result-file">
               <div class="result-file__icon">
@@ -343,6 +478,22 @@
           </div>
         }
       </article>
+
+      <!-- Proof of Transfer certificate -->
+      @if (proof(); as p) {
+        <div class="slide-in">
+          <app-proof-of-transfer [proof]="p" />
+        </div>
+      }
     </div>
   </div>
+
+  @if (showPaymentModal()) {
+    <app-crypto-payment-modal
+      [plan]="requiredPlan()"
+      [fileSizeMb]="selectedSizeMb()"
+      (paid)="onPaymentConfirmed($event)"
+      (closed)="onPaymentClosed()"
+    />
+  }
 </div>

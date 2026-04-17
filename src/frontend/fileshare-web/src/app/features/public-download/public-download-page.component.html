@@ -109,8 +109,8 @@
             </div>
           </div>
 
-          <!-- Image preview -->
-          @if (imagePreviewPossible() && canDownload()) {
+          <!-- Image preview (hidden when file is password-protected) -->
+          @if (imagePreviewPossible() && canDownload() && !metadata()?.hasPassword) {
             <div class="preview-section">
               @if (revealImagePreview()) {
                 <img
@@ -198,15 +198,48 @@
             </div>
           }
 
+          @if (metadata()?.hasPassword && canDownload()) {
+            <div class="password-prompt" [class.password-prompt--shake]="passwordShake()">
+              <div class="password-prompt__header">
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M5 9V7a5 5 0 0 1 10 0v2M4 9h12v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div>
+                  <p class="password-prompt__title">Password-protected file</p>
+                  <p class="password-prompt__sub">Enter the password shared by the sender to continue.</p>
+                </div>
+              </div>
+              <input
+                class="password-prompt__input"
+                [class.password-prompt__input--error]="passwordError()"
+                type="password"
+                autocomplete="off"
+                placeholder="Enter password"
+                [ngModel]="password()"
+                (ngModelChange)="password.set($event); passwordError.set(null)"
+                (keyup.enter)="download()"
+              />
+              @if (passwordError()) {
+                <p class="password-prompt__error" role="alert">
+                  <app-icon name="error" />
+                  {{ passwordError() }}
+                </p>
+              }
+            </div>
+          }
+
           <!-- Download CTA -->
           <button
             class="download-btn"
             [class.download-btn--active]="canDownload()"
             type="button"
-            [disabled]="!canDownload()"
+            [disabled]="!canDownload() || downloading()"
             (click)="download()"
           >
-            @if (canDownload()) {
+            @if (downloading()) {
+              <span class="spinner" aria-hidden="true"></span>
+              Downloading...
+            } @else if (canDownload()) {
               <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M10 4v8M10 12L7 9M10 12L13 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M4 16h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
@@ -224,6 +257,12 @@
             </p>
           }
         </article>
+
+        @if (proof(); as p) {
+          <div class="proof-wrap fade-in">
+            <app-proof-of-transfer [proof]="p" />
+          </div>
+        }
       }
     </div>
   </div>

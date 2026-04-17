@@ -452,6 +452,19 @@
   box-shadow: var(--shadow-accent);
 }
 
+.download-btn .spinner {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 246, 234, 0.4);
+  border-top-color: #fff6ea;
+  animation: spin 600ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .download-btn svg {
   width: 1.1rem;
   height: 1.1rem;
@@ -561,4 +574,98 @@
   .preview-btn {
     margin-left: 0;
   }
+}
+
+.proof-wrap {
+  margin-top: var(--space-4);
+}
+
+/* ─── Password prompt ─────────────────────────────────────── */
+.password-prompt {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--accent-200);
+  background: linear-gradient(135deg, rgba(30, 173, 163, 0.08), rgba(13, 116, 108, 0.03));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.password-prompt__header {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.password-prompt__header svg {
+  width: 2rem;
+  height: 2rem;
+  padding: 0.45rem;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent-700), var(--accent-500));
+  color: #fff6ea;
+  box-shadow: 0 6px 16px rgba(13, 116, 108, 0.3);
+}
+
+.password-prompt__title {
+  margin: 0 0 0.2rem;
+  font: 600 0.95rem/1.2 var(--font-sans);
+  color: var(--ink-900);
+}
+
+.password-prompt__sub {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-700);
+  line-height: 1.45;
+}
+
+.password-prompt__input {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--surface-border-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--ink-900);
+  font: 500 0.95rem/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.password-prompt__input:focus {
+  border-color: var(--accent-500);
+  box-shadow: 0 0 0 3px rgba(22, 145, 135, 0.15);
+  outline: none;
+}
+
+.password-prompt__input--error {
+  border-color: var(--danger-border);
+  box-shadow: 0 0 0 3px rgba(154, 47, 36, 0.12);
+}
+
+.password-prompt--shake {
+  animation: shake 500ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+.password-prompt__error {
+  margin: 0;
+  padding: 0.45rem 0.7rem;
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  --icon-size: 0.85rem;
 }

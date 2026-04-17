@@ -29,6 +29,9 @@ public static class TemporaryFileErrors
     public static readonly Error Expired = new("temporary_file.expired", "The temporary file has expired.", ErrorType.Gone);
     public static readonly Error Deleted = new("temporary_file.deleted", "The temporary file has been deleted.", ErrorType.Gone);
     public static readonly Error DownloadLimitReached = new("temporary_file.download_limit_reached", "The download limit has been reached.", ErrorType.Gone);
+    public static readonly Error PasswordRequired = new("temporary_file.password_required", "This file is password protected.", ErrorType.Validation);
+    public static readonly Error PasswordInvalid = new("temporary_file.password_invalid", "The provided password is incorrect.", ErrorType.Validation);
+    public static readonly Error InvalidFileHash = new("temporary_file.invalid_file_hash", "The file hash is invalid.", ErrorType.Validation);
 }
 
 public sealed class TemporaryFile : AggregateRoot
@@ -46,7 +49,9 @@ public sealed class TemporaryFile : AggregateRoot
         string accessToken,
         DateTimeOffset createdAt,
         DateTimeOffset expiresAt,
-        int? maxDownloads)
+        int? maxDownloads,
+        string? passwordHash,
+        TransferProof proof)
     {
         Id = id;
         FileName = fileName;
@@ -57,6 +62,12 @@ public sealed class TemporaryFile : AggregateRoot
         CreatedAt = createdAt;
         ExpiresAt = expiresAt;
         MaxDownloads = maxDownloads;
+        PasswordHash = passwordHash;
+        FileHash = proof.FileHash;
+        BlockNumber = proof.BlockNumber;
+        BlockHash = proof.BlockHash;
+        Signature = proof.Signature;
+        ProofIssuedAt = proof.IssuedAt;
         Status = TemporaryFileStatus.Available;
         Raise(new TemporaryFileUploadedDomainEvent(Id, AccessToken, createdAt));
     }
@@ -93,6 +104,20 @@ public sealed class TemporaryFile : AggregateRoot
 
     public long RowVersion { get; private set; }
 
+    public string? PasswordHash { get; private set; }
+
+    public string FileHash { get; private set; } = string.Empty;
+
+    public long BlockNumber { get; private set; }
+
+    public string BlockHash { get; private set; } = string.Empty;
+
+    public string Signature { get; private set; } = string.Empty;
+
+    public DateTimeOffset ProofIssuedAt { get; private set; }
+
+    public bool HasPassword => !string.IsNullOrEmpty(PasswordHash);
+
     public bool RequiresStorageCleanup => StorageDeletedAt is null && (Status == TemporaryFileStatus.Expired || Status == TemporaryFileStatus.Deleted);
 
     public static Result<TemporaryFile> Create(
@@ -103,7 +128,9 @@ public sealed class TemporaryFile : AggregateRoot
         StorageObjectKey storageObjectKey,
         AccessToken accessToken,
         ExpirationPolicy expirationPolicy,
-        DateTimeOffset createdAt)
+        TransferProof proof,
+        DateTimeOffset createdAt,
+        string? passwordHash = null)
     {
         if (string.IsNullOrWhiteSpace(fileName))
         {
@@ -129,7 +156,9 @@ public sealed class TemporaryFile : AggregateRoot
             accessToken.Value,
             createdAt,
             expirationPolicy.ExpiresAt,
-            expirationPolicy.MaxDownloads);
+            expirationPolicy.MaxDownloads,
+            passwordHash,
+            proof);
 
         return Result<TemporaryFile>.Success(temporaryFile);
     }

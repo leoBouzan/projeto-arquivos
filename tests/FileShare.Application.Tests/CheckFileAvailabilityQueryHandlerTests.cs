@@ -30,6 +30,9 @@ public sealed class CheckFileAvailabilityQueryHandlerTests
         public Task<TemporaryFile?> GetByAccessTokenAsync(string accessToken, CancellationToken cancellationToken)
             => Task.FromResult<TemporaryFile?>(null);
 
+        public Task<TemporaryFile?> GetByFileHashPrefixAsync(string fileHashPrefix, CancellationToken cancellationToken)
+            => Task.FromResult<TemporaryFile?>(null);
+
         public Task<TemporaryFile?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
             => Task.FromResult<TemporaryFile?>(null);
 

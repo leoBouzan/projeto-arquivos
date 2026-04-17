@@ -1,11 +1,20 @@
 namespace FileShare.Contracts.Files;
 
+public sealed record TransferProofContract(
+    string FileHash,
+    long BlockNumber,
+    string BlockHash,
+    string Signature,
+    DateTimeOffset IssuedAt);
+
 public sealed record UploadFileResponse(
     Guid Id,
     string AccessToken,
     string FileName,
     DateTimeOffset ExpiresAt,
     int? MaxDownloads,
+    bool HasPassword,
+    TransferProofContract Proof,
     string MetadataUrl,
     string AvailabilityUrl,
     string DownloadUrl);
@@ -19,7 +28,9 @@ public sealed record FileMetadataResponse(
     DateTimeOffset ExpiresAt,
     int DownloadCount,
     int? MaxDownloads,
-    string Status);
+    string Status,
+    bool HasPassword,
+    TransferProofContract Proof);
 
 public sealed record FileAvailabilityResponse(
     bool Available,
@@ -27,4 +38,19 @@ public sealed record FileAvailabilityResponse(
     string? Reason,
     DateTimeOffset? ExpiresAt,
     int? DownloadCount,
+    int? MaxDownloads,
+    bool HasPassword);
+
+public sealed record VerifyProofResponse(
+    bool Verified,
+    string FileName,
+    long Size,
+    string FileHash,
+    long BlockNumber,
+    string BlockHash,
+    string Signature,
+    DateTimeOffset IssuedAt,
+    DateTimeOffset ExpiresAt,
+    string Status,
+    int DownloadCount,
     int? MaxDownloads);

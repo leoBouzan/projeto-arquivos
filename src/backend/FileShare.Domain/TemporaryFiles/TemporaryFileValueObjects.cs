@@ -88,6 +88,59 @@ public sealed record StorageObjectKey
     }
 }
 
+public sealed record TransferProof
+{
+    private TransferProof(string fileHash, long blockNumber, string blockHash, string signature, DateTimeOffset issuedAt)
+    {
+        FileHash = fileHash;
+        BlockNumber = blockNumber;
+        BlockHash = blockHash;
+        Signature = signature;
+        IssuedAt = issuedAt;
+    }
+
+    public string FileHash { get; }
+
+    public long BlockNumber { get; }
+
+    public string BlockHash { get; }
+
+    public string Signature { get; }
+
+    public DateTimeOffset IssuedAt { get; }
+
+    public static Result<TransferProof> Create(string fileHash, DateTimeOffset issuedAt)
+    {
+        if (string.IsNullOrWhiteSpace(fileHash) || fileHash.Length != 64)
+        {
+            return Result<TransferProof>.Failure(TemporaryFileErrors.InvalidFileHash);
+        }
+
+        var normalized = fileHash.Trim().ToLowerInvariant();
+
+        foreach (var c in normalized)
+        {
+            var isDigit = c is >= '0' and <= '9';
+            var isHex = c is >= 'a' and <= 'f';
+            if (!isDigit && !isHex)
+            {
+                return Result<TransferProof>.Failure(TemporaryFileErrors.InvalidFileHash);
+            }
+        }
+
+        var blockNumber = 2_400_000L + RandomNumberGenerator.GetInt32(0, 99_999);
+        var blockHash = RandomHex(64);
+        var signature = RandomHex(128);
+
+        return Result<TransferProof>.Success(new TransferProof(normalized, blockNumber, blockHash, signature, issuedAt));
+    }
+
+    private static string RandomHex(int length)
+    {
+        return Convert.ToHexString(RandomNumberGenerator.GetBytes(length / 2)).ToLowerInvariant();
+    }
+}
+
 public sealed record ExpirationPolicy
 {
     private ExpirationPolicy(DateTimeOffset expiresAt, int? maxDownloads)

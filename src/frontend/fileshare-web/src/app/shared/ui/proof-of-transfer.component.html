@@ -1,0 +1,88 @@
+<article class="proof" [class.proof--compact]="compact()">
+  <!-- Header -->
+  <header class="proof__head">
+    <div class="proof__seal" aria-hidden="true">
+      <svg viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.35"/>
+        <circle cx="24" cy="24" r="16" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.6"/>
+        <path d="M15 24l6 6 12-12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="proof__seal-pulse"></span>
+    </div>
+    <div class="proof__head-text">
+      <p class="proof__eyebrow">Proof of Transfer</p>
+      <h3 class="proof__title">Verified certificate</h3>
+      <p class="proof__sub">Cryptographic receipt stored in the FileShare ledger</p>
+    </div>
+    <span class="proof__badge">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M4 8.5l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Verified
+    </span>
+  </header>
+
+  <!-- Grid of facts -->
+  <dl class="proof__grid">
+    <div class="proof__row proof__row--wide">
+      <dt>File name</dt>
+      <dd class="proof__file">{{ proof().fileName }}</dd>
+    </div>
+    <div class="proof__row">
+      <dt>Size</dt>
+      <dd>{{ formatSize(proof().fileSize) }}</dd>
+    </div>
+    <div class="proof__row">
+      <dt>Timestamp (UTC)</dt>
+      <dd [title]="iso()">{{ formattedTs() }}</dd>
+    </div>
+    <div class="proof__row">
+      <dt>Block</dt>
+      <dd class="proof__mono">#{{ proof().blockNumber }}</dd>
+    </div>
+    <div class="proof__row proof__row--copy">
+      <dt>SHA-256</dt>
+      <dd>
+        <code class="proof__mono">{{ shortHash() }}</code>
+        <button type="button" class="proof__copy" (click)="copy(proof().fileHash, 'Hash')" aria-label="Copy hash">
+          <app-icon name="copy" />
+        </button>
+      </dd>
+    </div>
+    <div class="proof__row proof__row--copy">
+      <dt>Block hash</dt>
+      <dd>
+        <code class="proof__mono">{{ shortBlockHash() }}</code>
+        <button type="button" class="proof__copy" (click)="copy(proof().blockHash, 'Block')" aria-label="Copy block hash">
+          <app-icon name="copy" />
+        </button>
+      </dd>
+    </div>
+    <div class="proof__row proof__row--wide proof__row--copy">
+      <dt>Signature (Ed25519)</dt>
+      <dd>
+        <code class="proof__mono">{{ shortSignature() }}</code>
+        <button type="button" class="proof__copy" (click)="copy(proof().signature, 'Signature')" aria-label="Copy signature">
+          <app-icon name="copy" />
+        </button>
+      </dd>
+    </div>
+  </dl>
+
+  @if (copied()) {
+    <p class="proof__flash" aria-live="polite">{{ copied() }} copied to clipboard</p>
+  }
+
+  @if (!compact()) {
+    <div class="proof__footer">
+      <div class="proof__ledger">
+        <span class="proof__dot"></span>
+        Ledger #4 · 12 nodes attested
+      </div>
+      <a class="proof__verify" [href]="verifyUrl()" target="_blank" rel="noreferrer">
+        <app-icon name="open" />
+        Verify externally
+      </a>
+    </div>
+  }
+</article>

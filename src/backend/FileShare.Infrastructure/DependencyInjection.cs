@@ -1,5 +1,6 @@
 using FileShare.Application.Abstractions.Messaging;
 using FileShare.Application.Abstractions.Persistence;
+using FileShare.Application.Abstractions.Security;
 using FileShare.Application.Abstractions.Storage;
 using FileShare.Application.Abstractions.Time;
 using FileShare.Infrastructure.Configuration;
@@ -7,6 +8,7 @@ using FileShare.Infrastructure.Messaging;
 using FileShare.Infrastructure.Paths;
 using FileShare.Infrastructure.Persistence;
 using FileShare.Infrastructure.Persistence.Repositories;
+using FileShare.Infrastructure.Security;
 using FileShare.Infrastructure.Storage.Local;
 using FileShare.Infrastructure.Time;
 using Microsoft.Data.Sqlite;
@@ -64,6 +66,7 @@ public static class DependencyInjection
         services.AddSingleton<IFileStorage, LocalFileStorage>();
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
         services.AddSingleton<IEventBus, NoOpEventBus>();
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
         return services;
     }

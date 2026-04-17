@@ -1,0 +1,170 @@
+<div class="crypto-modal" role="dialog" aria-modal="true" aria-labelledby="crypto-modal-title">
+  <div class="crypto-modal__backdrop" (click)="close()"></div>
+
+  <div class="crypto-modal__panel">
+    <!-- Header -->
+    <header class="crypto-modal__head">
+      <div class="crypto-modal__brand">
+        <div class="crypto-modal__logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L4 7v10l8 5 8-5V7l-8-5zM4 7l8 5 8-5M12 12v10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <p class="crypto-modal__eyebrow">FileShare Chain</p>
+          <h3 class="crypto-modal__title" id="crypto-modal-title">Unlock {{ planLabel() }} plan</h3>
+        </div>
+      </div>
+      <button class="crypto-modal__close" type="button" (click)="close()" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M6 18L18 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </header>
+
+    <!-- Plan summary -->
+    <section class="crypto-modal__summary">
+      <div>
+        <p class="crypto-modal__label">Selected plan</p>
+        <p class="crypto-modal__plan">{{ planLabel() }} — ${{ usdPrice() }} / month</p>
+        @if (fileSizeMb() > 0) {
+          <p class="crypto-modal__trigger">Triggered by {{ fileSizeMb().toFixed(1) }} MB upload (exceeds Free tier)</p>
+        }
+      </div>
+      <ul class="crypto-modal__perks">
+        @for (perk of planPerks(); track perk) {
+          <li>
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {{ perk }}
+          </li>
+        }
+      </ul>
+    </section>
+
+    @if (state() === 'picking' || state() === 'paying') {
+      <!-- Currency pick + payment -->
+      <section class="crypto-modal__currencies">
+        <p class="crypto-modal__label">Choose asset</p>
+        <div class="crypto-modal__currency-list">
+          @for (c of currencies; track c.id) {
+            <button
+              type="button"
+              class="currency"
+              [class.currency--active]="selectedCurrency() === c.id"
+              [disabled]="state() !== 'picking'"
+              (click)="selectCurrency(c.id)"
+            >
+              <span class="currency__symbol">{{ c.symbol }}</span>
+              <span class="currency__label">{{ c.label }}</span>
+            </button>
+          }
+        </div>
+      </section>
+
+      <section class="crypto-modal__payment">
+        <div class="crypto-modal__qr">
+          <div class="qr">
+            @for (row of qrCells(); track $index; let y = $index) {
+              <div class="qr__row">
+                @for (cell of row; track $index; let x = $index) {
+                  <span class="qr__cell" [class.qr__cell--on]="cell"></span>
+                }
+              </div>
+            }
+          </div>
+          <p class="crypto-modal__hint">Scan with any {{ currency().label }} wallet</p>
+        </div>
+
+        <div class="crypto-modal__details">
+          <div class="detail">
+            <span class="detail__label">Amount</span>
+            <span class="detail__value detail__value--strong">{{ cryptoAmount() }} {{ currency().symbol }}</span>
+            <span class="detail__sub">≈ ${{ usdPrice() }} USD</span>
+          </div>
+          <div class="detail">
+            <span class="detail__label">Network</span>
+            <span class="detail__value">{{ currency().network }}</span>
+          </div>
+          <div class="detail detail--copy">
+            <span class="detail__label">Destination address</span>
+            <div class="detail__address">
+              <code>{{ currency().address }}</code>
+              <button type="button" (click)="copy(currency().address, 'Address')">
+                <app-icon name="copy" />
+              </button>
+            </div>
+            @if (copied() === 'Address') {
+              <span class="detail__copied">Copied</span>
+            }
+          </div>
+
+          @if (state() === 'picking') {
+            <button class="crypto-modal__pay-btn" type="button" (click)="startPayment()">
+              <svg viewBox="0 0 20 20" fill="none"><path d="M3 10l4 4 10-10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Send {{ cryptoAmount() }} {{ currency().symbol }} (simulate)
+            </button>
+            <p class="crypto-modal__disclaimer">
+              Demo environment · no real funds are transferred.
+            </p>
+            <button class="crypto-modal__bypass" type="button" (click)="bypassPayment()">
+              Skip payment (demo bypass)
+            </button>
+          } @else {
+            <div class="crypto-modal__pending">
+              <span class="spinner"></span>
+              Broadcasting transaction to mempool...
+            </div>
+          }
+        </div>
+      </section>
+    } @else if (state() === 'confirming') {
+      <!-- Confirming block -->
+      <section class="crypto-modal__confirming">
+        <div class="confirm-ring">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="52" stroke="currentColor" stroke-width="4" fill="none" opacity="0.15"/>
+            <circle cx="60" cy="60" r="52" stroke="currentColor" stroke-width="4" fill="none"
+              stroke-linecap="round" stroke-dasharray="327" [attr.stroke-dashoffset]="327 - (confirmations() / 3) * 327"
+              transform="rotate(-90 60 60)"/>
+          </svg>
+          <div class="confirm-ring__value">{{ confirmations() }}/3</div>
+        </div>
+        <p class="crypto-modal__title-inline">Waiting for network confirmations</p>
+        <p class="crypto-modal__tx">
+          <span class="tx-label">Tx:</span>
+          <code>{{ truncate(txHash(), 14, 10) }}</code>
+          <button type="button" (click)="copy(txHash(), 'Tx')">
+            <app-icon name="copy" />
+          </button>
+        </p>
+      </section>
+    } @else {
+      <!-- Confirmed -->
+      <section class="crypto-modal__confirmed">
+        <div class="confirmed-icon">
+          <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+            <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M14 25l7 7 14-14" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h4>Payment confirmed</h4>
+        <p class="crypto-modal__muted">Plan <strong>{{ planLabel() }}</strong> unlocked. Ready to upload.</p>
+        <div class="confirmed-tx">
+          <span>Transaction hash</span>
+          <div class="confirmed-tx__row">
+            <code>{{ truncate(txHash(), 18, 12) }}</code>
+            <button type="button" (click)="copy(txHash(), 'Tx')">
+              <app-icon name="copy" />
+            </button>
+          </div>
+          @if (copied() === 'Tx') {
+            <span class="detail__copied">Copied</span>
+          }
+        </div>
+        <button class="crypto-modal__pay-btn crypto-modal__pay-btn--success" type="button" (click)="finishPayment()">
+          Continue to upload
+        </button>
+      </section>
+    }
+  </div>
+</div>

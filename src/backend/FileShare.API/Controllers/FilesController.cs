@@ -15,6 +15,12 @@ using UploadFileResponseContract = FileShare.Contracts.Files.UploadFileResponse;
 
 namespace FileShare.API.Controllers;
 
+internal static class FilesControllerMappers
+{
+    public static TransferProofContract ToContract(this TransferProofDto dto) =>
+        new(dto.FileHash, dto.BlockNumber, dto.BlockHash, dto.Signature, dto.IssuedAt);
+}
+
 [ApiController]
 [Route("api/files")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
@@ -39,7 +45,8 @@ public sealed class FilesController : ControllerBase
             request.File.Length,
             request.ExpiresAt,
             request.MaxDownloads,
-            stream), cancellationToken);
+            stream,
+            request.Password), cancellationToken);
 
         if (result.IsFailure)
         {
@@ -53,6 +60,8 @@ public sealed class FilesController : ControllerBase
             result.Value.FileName,
             result.Value.ExpiresAt,
             result.Value.MaxDownloads,
+            result.Value.HasPassword,
+            result.Value.Proof.ToContract(),
             Url.RouteUrl(nameof(GetMetadata), new { accessToken }) ?? string.Empty,
             Url.RouteUrl(nameof(CheckAvailability), new { accessToken }) ?? string.Empty,
             Url.RouteUrl(nameof(Download), new { accessToken }) ?? string.Empty);
@@ -80,7 +89,9 @@ public sealed class FilesController : ControllerBase
             result.Value.ExpiresAt,
             result.Value.DownloadCount,
             result.Value.MaxDownloads,
-            result.Value.Status));
+            result.Value.Status,
+            result.Value.HasPassword,
+            result.Value.Proof.ToContract()));
     }
 
     [HttpGet("{accessToken}/availability", Name = nameof(CheckAvailability))]
@@ -100,14 +111,20 @@ public sealed class FilesController : ControllerBase
             result.Value.Reason,
             result.Value.ExpiresAt,
             result.Value.DownloadCount,
-            result.Value.MaxDownloads));
+            result.Value.MaxDownloads,
+            result.Value.HasPassword));
     }
 
     [HttpGet("{accessToken}/download", Name = nameof(Download))]
     [ValidatePublicAccessToken]
-    public async Task<IActionResult> Download(string accessToken, CancellationToken cancellationToken)
+    public async Task<IActionResult> Download(
+        string accessToken,
+        [FromHeader(Name = "X-File-Password")] string? password,
+        [FromQuery(Name = "password")] string? passwordQuery,
+        CancellationToken cancellationToken)
     {
-        var registerResult = await _sender.Send(new RegisterDownloadCommand(accessToken), cancellationToken);
+        var effectivePassword = password ?? passwordQuery;
+        var registerResult = await _sender.Send(new RegisterDownloadCommand(accessToken, effectivePassword), cancellationToken);
         if (registerResult.IsFailure)
         {
             return this.ToActionResult(registerResult);

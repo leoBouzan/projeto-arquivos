@@ -1,6 +1,7 @@
 using FileShare.Application.Abstractions.Persistence;
 using FileShare.Application.Common.CQRS;
 using FileShare.Application.Common.Errors;
+using FileShare.Application.Features.TemporaryFiles.UploadFile;
 using FileShare.Domain.Abstractions;
 using MediatR;
 
@@ -17,7 +18,9 @@ public sealed record FileMetadataDto(
     DateTimeOffset ExpiresAt,
     int DownloadCount,
     int? MaxDownloads,
-    string Status);
+    string Status,
+    bool HasPassword,
+    TransferProofDto Proof);
 
 public sealed class GetFileMetadataQueryHandler : IRequestHandler<GetFileMetadataQuery, Result<FileMetadataDto>>
 {
@@ -45,6 +48,13 @@ public sealed class GetFileMetadataQueryHandler : IRequestHandler<GetFileMetadat
             temporaryFile.ExpiresAt,
             temporaryFile.DownloadCount,
             temporaryFile.MaxDownloads,
-            temporaryFile.Status.ToString()));
+            temporaryFile.Status.ToString(),
+            temporaryFile.HasPassword,
+            new TransferProofDto(
+                temporaryFile.FileHash,
+                temporaryFile.BlockNumber,
+                temporaryFile.BlockHash,
+                temporaryFile.Signature,
+                temporaryFile.ProofIssuedAt)));
     }
 }

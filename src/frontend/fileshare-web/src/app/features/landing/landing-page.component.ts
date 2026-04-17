@@ -101,11 +101,83 @@ export class LandingPageComponent implements AfterViewInit, OnDestroy {
   ] as const;
 
   readonly useCases = [
-    { icon: '📦', label: 'Send large assets to clients', tag: 'Client delivery' },
-    { icon: '🔒', label: 'Share sensitive documents once', tag: 'One-time access' },
-    { icon: '🎓', label: 'Distribute course materials', tag: 'Education' },
-    { icon: '🤝', label: 'Collaborate with external teams', tag: 'Collaboration' },
-    { icon: '🎨', label: 'Preview design files before handoff', tag: 'Design' },
-    { icon: '📊', label: 'Share reports with limited access', tag: 'Business' }
+    { icon: '⚖️', label: 'Legal teams delivering contracts with verifiable timestamps', tag: 'Legal' },
+    { icon: '🎓', label: 'Academic submissions with tamper-proof proof of date', tag: 'Academia' },
+    { icon: '🗞️', label: 'Journalists protecting source material chain of custody', tag: 'Journalism' },
+    { icon: '📊', label: 'Consultants delivering reports with audit-grade receipts', tag: 'Consulting' },
+    { icon: '🎨', label: 'Designers handing off assets with integrity attestation', tag: 'Design' },
+    { icon: '🤝', label: 'External collaborators without sharing credentials', tag: 'Collaboration' }
+  ] as const;
+
+  readonly plans = [
+    {
+      id: 'free',
+      name: 'Free',
+      price: '$0',
+      period: 'forever',
+      tagline: 'Quick shares, no strings attached.',
+      highlight: false,
+      features: [
+        { text: 'Files up to 50 MB', enabled: true },
+        { text: '3 downloads per link', enabled: true },
+        { text: '24-hour retention', enabled: true },
+        { text: 'Proof of Transfer (basic)', enabled: true },
+        { text: 'No API access', enabled: false }
+      ],
+      cta: 'Start for free',
+      ctaHint: 'No signup required'
+    },
+    {
+      id: 'pro',
+      name: 'Pro',
+      price: '$9',
+      period: '/month',
+      tagline: 'For professionals sharing larger assets.',
+      highlight: true,
+      features: [
+        { text: 'Files up to 5 GB', enabled: true },
+        { text: 'Unlimited downloads', enabled: true },
+        { text: '7-day retention', enabled: true },
+        { text: 'Proof of Transfer HD (Ed25519)', enabled: true },
+        { text: 'Priority ledger anchoring', enabled: true }
+      ],
+      cta: 'Upgrade with crypto',
+      ctaHint: 'Pay in ETH · USDC · BTC'
+    },
+    {
+      id: 'business',
+      name: 'Business',
+      price: '$29',
+      period: '/month',
+      tagline: 'For teams with compliance and audit needs.',
+      highlight: false,
+      features: [
+        { text: 'Unlimited size', enabled: true },
+        { text: '30-day retention', enabled: true },
+        { text: 'API & webhooks', enabled: true },
+        { text: 'Legal-grade Proof certificates', enabled: true },
+        { text: 'Dedicated ledger node', enabled: true }
+      ],
+      cta: 'Contact sales',
+      ctaHint: 'Custom invoicing available'
+    }
+  ] as const;
+
+  readonly proofSteps = [
+    {
+      number: '01',
+      title: 'Hash at rest',
+      description: 'The SHA-256 of your file is computed before upload — never leaves the browser.'
+    },
+    {
+      number: '02',
+      title: 'Sign & anchor',
+      description: 'An Ed25519 signature plus a ledger block hash are bound to the transfer event.'
+    },
+    {
+      number: '03',
+      title: 'Deliver with receipt',
+      description: 'Sender and recipient both receive a Proof of Transfer certificate, verifiable forever.'
+    }
   ] as const;
 }

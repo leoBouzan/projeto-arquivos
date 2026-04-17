@@ -1,0 +1,208 @@
+<div class="verify-page">
+  <app-floating-background [subtle]="true" />
+
+  <div class="verify-page__inner">
+    <!-- Header -->
+    <header class="verify-page__header">
+      <a class="verify-page__back" routerLink="/">
+        <svg viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Home
+      </a>
+      <p class="verify-page__eyebrow">Proof of Transfer</p>
+      <h1 class="verify-page__title">Verify a certificate</h1>
+      <p class="verify-page__sub">
+        Paste any SHA-256 hash or prefix from a FileShare certificate to check it against the ledger.
+        Optionally upload the same file to prove local integrity offline.
+      </p>
+    </header>
+
+    <!-- Search card -->
+    <section class="search-card">
+      <label class="search-card__label" for="verify-input">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.8"/>
+          <path d="m14 14 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        Enter SHA-256 hash
+      </label>
+      <div class="search-card__row">
+        <input
+          id="verify-input"
+          class="search-card__input"
+          type="text"
+          placeholder="e.g. a1b4e9c7d8f2..."
+          autocomplete="off"
+          spellcheck="false"
+          [ngModel]="query()"
+          (ngModelChange)="query.set($event)"
+          (keyup.enter)="submit()"
+        />
+        <button class="search-card__btn" type="button" (click)="submit()" [disabled]="isLoading()">
+          @if (isLoading()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Verifying
+          } @else {
+            Verify
+            <svg viewBox="0 0 20 20" fill="none"><path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          }
+        </button>
+      </div>
+      <p class="search-card__hint">Works with any prefix of 8+ characters.</p>
+    </section>
+
+    <!-- Error state -->
+    @if (error() && !isLoading()) {
+      <section class="result-card result-card--error">
+        <div class="result-card__icon result-card__icon--error" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 8v5M12 16.5v.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="result-card__title">No proof found</h2>
+          <p class="result-card__sub">{{ error() }}</p>
+        </div>
+      </section>
+    }
+
+    <!-- Verified state -->
+    @if (result(); as r) {
+      <section class="result-card result-card--success">
+        <div class="result-card__head">
+          <div class="result-card__icon result-card__icon--success" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="1.5" opacity="0.4"/>
+              <circle cx="24" cy="24" r="16" stroke="currentColor" stroke-width="1.5" opacity="0.7"/>
+              <path d="M15 24l6 6 12-12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="result-card__pulse"></span>
+          </div>
+          <div>
+            <p class="result-card__badge">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M4 8.5l3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Verified on the FileShare ledger
+            </p>
+            <h2 class="result-card__title">{{ r.fileName }}</h2>
+            <p class="result-card__sub">
+              {{ formatSize(r.size) }} · Issued {{ daysSinceIssued() }} · Status:
+              <strong>{{ r.status }}</strong>
+            </p>
+          </div>
+        </div>
+
+        <dl class="proof-facts">
+          <div class="proof-fact proof-fact--wide">
+            <dt>SHA-256</dt>
+            <dd class="mono">
+              <code>{{ r.fileHash }}</code>
+              <button type="button" (click)="copy(r.fileHash, 'Hash')" aria-label="Copy hash">
+                <app-icon name="copy" />
+              </button>
+            </dd>
+          </div>
+          <div class="proof-fact">
+            <dt>Block</dt>
+            <dd class="mono">#{{ r.blockNumber }}</dd>
+          </div>
+          <div class="proof-fact">
+            <dt>Issued at</dt>
+            <dd>{{ formatDate(r.issuedAt) }}</dd>
+          </div>
+          <div class="proof-fact">
+            <dt>Expires at</dt>
+            <dd>{{ formatDate(r.expiresAt) }}</dd>
+          </div>
+          <div class="proof-fact">
+            <dt>Downloads</dt>
+            <dd>{{ r.downloadCount }}{{ r.maxDownloads ? ' / ' + r.maxDownloads : ' (no limit)' }}</dd>
+          </div>
+          <div class="proof-fact proof-fact--wide">
+            <dt>Block hash</dt>
+            <dd class="mono">
+              <code>{{ truncate(r.blockHash, 18, 14) }}</code>
+              <button type="button" (click)="copy(r.blockHash, 'Block')" aria-label="Copy block hash">
+                <app-icon name="copy" />
+              </button>
+            </dd>
+          </div>
+          <div class="proof-fact proof-fact--wide">
+            <dt>Signature (Ed25519)</dt>
+            <dd class="mono">
+              <code>{{ truncate(r.signature, 22, 16) }}</code>
+              <button type="button" (click)="copy(r.signature, 'Signature')" aria-label="Copy signature">
+                <app-icon name="copy" />
+              </button>
+            </dd>
+          </div>
+        </dl>
+
+        @if (copied()) {
+          <p class="copied-flash" aria-live="polite">{{ copied() }} copied to clipboard</p>
+        }
+
+        <!-- Integrity compare -->
+        <section class="integrity"
+          [class.integrity--match]="integrityStatus() === 'match'"
+          [class.integrity--mismatch]="integrityStatus() === 'mismatch'"
+        >
+          <div class="integrity__intro">
+            <p class="integrity__title">Compare local file (optional)</p>
+            <p class="integrity__sub">
+              Upload the same file you received to compute its SHA-256 in the browser and verify it matches the ledger.
+              The file never leaves your device.
+            </p>
+          </div>
+
+          <div class="integrity__action">
+            <label class="integrity__file-label">
+              @if (comparingFile()) {
+                <span class="spinner" aria-hidden="true"></span>
+                Hashing...
+              } @else {
+                <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M10 14V5M10 5L6 9M10 5L14 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Select file to compare
+              }
+              <input
+                type="file"
+                (change)="onFileCompare($event)"
+                [disabled]="comparingFile()"
+              />
+            </label>
+
+            @if (integrityStatus() === 'match') {
+              <p class="integrity__result integrity__result--match">
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M3 8.5l3 3 7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Local hash matches the ledger — integrity confirmed
+              </p>
+            } @else if (integrityStatus() === 'mismatch') {
+              <p class="integrity__result integrity__result--mismatch">
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Hash mismatch — this file is NOT the one certified
+              </p>
+            }
+
+            @if (computedFileHash(); as local) {
+              <div class="integrity__hashes">
+                <div>
+                  <span>Local SHA-256</span>
+                  <code>{{ truncate(local, 18, 14) }}</code>
+                </div>
+                <div>
+                  <span>Ledger SHA-256</span>
+                  <code>{{ truncate(r.fileHash, 18, 14) }}</code>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      </section>
+    }
+  </div>
+</div>

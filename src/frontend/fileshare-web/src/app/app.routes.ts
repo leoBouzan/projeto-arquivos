@@ -19,6 +19,16 @@ export const routes: Routes = [
       )
   },
   {
+    path: 'verify',
+    loadComponent: () =>
+      import('./features/verify/verify-page.component').then((m) => m.VerifyPageComponent)
+  },
+  {
+    path: 'verify/:hash',
+    loadComponent: () =>
+      import('./features/verify/verify-page.component').then((m) => m.VerifyPageComponent)
+  },
+  {
     path: '**',
     redirectTo: ''
   }

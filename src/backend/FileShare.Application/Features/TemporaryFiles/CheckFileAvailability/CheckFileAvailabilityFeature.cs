@@ -14,7 +14,8 @@ public sealed record FileAvailabilityDto(
     string? Reason,
     DateTimeOffset? ExpiresAt,
     int? DownloadCount,
-    int? MaxDownloads);
+    int? MaxDownloads,
+    bool HasPassword);
 
 public sealed class CheckFileAvailabilityQueryHandler : IRequestHandler<CheckFileAvailabilityQuery, Result<FileAvailabilityDto>>
 {
@@ -46,7 +47,8 @@ public sealed class CheckFileAvailabilityQueryHandler : IRequestHandler<CheckFil
                 null,
                 temporaryFile.ExpiresAt,
                 temporaryFile.DownloadCount,
-                temporaryFile.MaxDownloads));
+                temporaryFile.MaxDownloads,
+                temporaryFile.HasPassword));
         }
 
         var firstError = availability.Errors[0];
@@ -64,6 +66,7 @@ public sealed class CheckFileAvailabilityQueryHandler : IRequestHandler<CheckFil
             firstError.Message,
             temporaryFile.ExpiresAt,
             temporaryFile.DownloadCount,
-            temporaryFile.MaxDownloads));
+            temporaryFile.MaxDownloads,
+            temporaryFile.HasPassword));
     }
 }
