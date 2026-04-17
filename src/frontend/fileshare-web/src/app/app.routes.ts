@@ -4,13 +4,18 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./features/upload/upload-page.component').then((module) => module.UploadPageComponent)
+      import('./features/landing/landing-page.component').then((m) => m.LandingPageComponent)
+  },
+  {
+    path: 'upload',
+    loadComponent: () =>
+      import('./features/upload/upload-page.component').then((m) => m.UploadPageComponent)
   },
   {
     path: 'files/:token',
     loadComponent: () =>
       import('./features/public-download/public-download-page.component').then(
-        (module) => module.PublicDownloadPageComponent
+        (m) => m.PublicDownloadPageComponent
       )
   },
   {

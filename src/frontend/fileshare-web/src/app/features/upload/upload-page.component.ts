@@ -7,6 +7,7 @@ import { FilesApiService } from '../../core/api/files-api.service';
 import { UploadFileResponse } from '../../shared/models/file-contracts';
 import { AppIconComponent } from '../../shared/ui/app-icon.component';
 import { CopyFieldComponent } from '../../shared/ui/copy-field.component';
+import { FloatingBackgroundComponent } from '../../shared/ui/floating-background.component';
 import { ShareAnimationComponent } from '../../shared/ui/share-animation.component';
 import { StatusBadgeComponent } from '../../shared/ui/status-badge.component';
 
@@ -31,7 +32,8 @@ const RECENT_LINKS_STORAGE_KEY = 'fileshare.recent-links.v1';
     AppIconComponent,
     StatusBadgeComponent,
     ShareAnimationComponent,
-    CopyFieldComponent
+    CopyFieldComponent,
+    FloatingBackgroundComponent
   ],
   templateUrl: './upload-page.component.html',
   styleUrl: './upload-page.component.scss'

@@ -9,12 +9,13 @@ import {
   FileMetadataResponse
 } from '../../shared/models/file-contracts';
 import { AppIconComponent } from '../../shared/ui/app-icon.component';
+import { FloatingBackgroundComponent } from '../../shared/ui/floating-background.component';
 import { ShareAnimationComponent } from '../../shared/ui/share-animation.component';
 import { StatusBadgeComponent } from '../../shared/ui/status-badge.component';
 
 @Component({
   selector: 'app-public-download-page',
-  imports: [CommonModule, RouterLink, AppIconComponent, StatusBadgeComponent, ShareAnimationComponent],
+  imports: [CommonModule, RouterLink, AppIconComponent, StatusBadgeComponent, ShareAnimationComponent, FloatingBackgroundComponent],
   templateUrl: './public-download-page.component.html',
   styleUrl: './public-download-page.component.scss'
 })
