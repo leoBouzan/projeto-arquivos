@@ -1,50 +1,230 @@
-<section class="download-layout">
-  <a class="back-link" routerLink="/">Back to upload</a>
+<div class="dl-page">
+  <app-floating-background [subtle]="true" />
 
-  @if (isLoading()) {
-    <article class="card card--state">
-      <p>Loading link details...</p>
-    </article>
-  } @else if (error()) {
-    <article class="card card--state">
-      <p class="state-title">Link unavailable</p>
-      <p>{{ error() }}</p>
-    </article>
-  } @else {
-    <article class="card card--summary">
-      <p class="card__eyebrow">Public link</p>
-      <h2>{{ metadata()?.fileName }}</h2>
+  <div class="dl-page__inner">
+    <!-- Sidebar -->
+    <aside class="sidebar fade-in">
+      <div class="sidebar__brand">
+        <a class="brand-link" routerLink="/">FileShare</a>
+      </div>
+      <p class="sidebar__eyebrow">Public link</p>
+      <h2 class="sidebar__title">Secure file<br>delivery</h2>
+      <p class="sidebar__copy">
+        This temporary page provides controlled access based on expiration and download limits.
+      </p>
 
-      <dl class="summary-grid">
-        <div>
-          <dt>Status</dt>
-          <dd>{{ availability()?.status }}</dd>
-        </div>
-        <div>
-          <dt>Content type</dt>
-          <dd>{{ metadata()?.contentType }}</dd>
-        </div>
-        <div>
-          <dt>Size</dt>
-          <dd>{{ metadata()?.size | number }} bytes</dd>
-        </div>
-        <div>
-          <dt>Downloads</dt>
-          <dd>{{ availability()?.downloadCount ?? 0 }} / {{ availability()?.maxDownloads ?? 'unlimited' }}</dd>
-        </div>
-        <div>
-          <dt>Expires at</dt>
-          <dd>{{ metadata()?.expiresAt | date: 'medium' }}</dd>
-        </div>
-      </dl>
+      <a class="back-link" routerLink="/upload">
+        <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M10 14V5M10 5L6 9M10 5L14 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 16h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity="0.6"/>
+        </svg>
+        Share another file
+      </a>
 
-      @if (availability()?.reason) {
-        <p class="reason">{{ availability()?.reason }}</p>
+      <div class="sidebar__anim">
+        <app-share-animation />
+      </div>
+
+      <!-- Info pills -->
+      <div class="info-pills">
+        <div class="info-pill">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 4v4l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+          Auto-expires
+        </div>
+        <div class="info-pill">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 2L13 4.5V8C13 11 10.5 13.5 8 14.5C5.5 13.5 3 11 3 8V4.5L8 2Z" stroke="currentColor" stroke-width="1.3"/>
+          </svg>
+          Token-secured
+        </div>
+        <div class="info-pill">
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M4 8h6M4 11h4M4 5h8M8 2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Temporary link
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <div class="main">
+      @if (isLoading()) {
+        <div class="card fade-in">
+          <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">
+              <p class="loading-title">Checking link status...</p>
+              <p class="loading-sub">Please wait while we load the file details.</p>
+            </div>
+          </div>
+          <div class="skeleton-block">
+            <div class="skeleton skeleton--title"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton skeleton--sm"></div>
+          </div>
+        </div>
+      } @else if (error()) {
+        <div class="card card--state card--error fade-in">
+          <div class="state-icon state-icon--error">
+            <app-icon name="error" />
+          </div>
+          <div>
+            <p class="state-title">Link unavailable</p>
+            <p class="state-sub">{{ error() }}</p>
+          </div>
+          <a class="state-cta" routerLink="/upload">Upload a new file</a>
+        </div>
+      } @else {
+        <article class="card fade-in">
+          <!-- Status banner for non-active states -->
+          @if (statusTone() !== 'available') {
+            <div class="status-banner" [class]="'status-banner--' + statusTone()">
+              <div class="status-banner__icon">
+                @if (statusTone() === 'warning') {
+                  <app-icon name="warning" />
+                } @else {
+                  <app-icon name="expired" />
+                }
+              </div>
+              <div>
+                <p class="status-banner__title">{{ statusLabel() }}</p>
+                @if (availability()?.reason) {
+                  <p class="status-banner__reason">{{ availability()?.reason }}</p>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- File header -->
+          <div class="file-header">
+            <div class="file-header__icon" [class.file-header__icon--inactive]="!canDownload()">
+              <app-icon [name]="fileIcon()" />
+            </div>
+            <div class="file-header__info">
+              <h3 class="file-name">{{ metadata()?.fileName }}</h3>
+              <app-status-badge [label]="statusLabel()" [tone]="statusTone()" />
+            </div>
+          </div>
+
+          <!-- Image preview -->
+          @if (imagePreviewPossible() && canDownload()) {
+            <div class="preview-section">
+              @if (revealImagePreview()) {
+                <img
+                  class="preview-img fade-in"
+                  [src]="downloadUrl()"
+                  [alt]="'Preview of ' + (metadata()?.fileName ?? 'shared image')"
+                />
+              } @else {
+                <div class="preview-prompt">
+                  <svg class="preview-prompt__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1.6"/>
+                    <path d="M3 14l4.5-4.5a2 2 0 0 1 2.8 0L14 13l2-2a2 2 0 0 1 2.8 0L21 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                    <circle cx="9" cy="9" r="1.5" fill="currentColor"/>
+                  </svg>
+                  <div>
+                    <p class="preview-prompt__title">Image preview available</p>
+                    <p class="preview-prompt__note">Note: loading the preview may count as one download.</p>
+                  </div>
+                  <button class="preview-btn" type="button" (click)="showImagePreview()">
+                    Load preview
+                  </button>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Info grid -->
+          <dl class="info-grid">
+            <div class="info-item" [class.info-item--warn]="statusTone() === 'danger'">
+              <dt>
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M8 4v4l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                  <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2"/>
+                </svg>
+                Expiration
+              </dt>
+              <dd>{{ expirationDisplay() }}</dd>
+            </div>
+            <div class="info-item" [class.info-item--warn]="statusTone() === 'warning'">
+              <dt>
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M8 14V6M8 6L5 9M8 6L11 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M3 14h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity="0.5"/>
+                </svg>
+                Downloads
+              </dt>
+              <dd>{{ downloadsDisplay() }}</dd>
+            </div>
+            <div class="info-item">
+              <dt>
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M9 2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V6L9 2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+                  <path d="M9 2v4h4" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+                </svg>
+                File type
+              </dt>
+              <dd>{{ metadata()?.contentType ?? '—' }}</dd>
+            </div>
+            <div class="info-item">
+              <dt>
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <rect x="2" y="2" width="12" height="12" rx="3" stroke="currentColor" stroke-width="1.2"/>
+                  <path d="M5 8h6M5 5h6M5 11h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+                Size
+              </dt>
+              <dd>{{ formatFileSize(metadata()?.size) }}</dd>
+            </div>
+          </dl>
+
+          <!-- Downloads progress -->
+          @if (metadata()?.maxDownloads) {
+            <div class="downloads-bar">
+              <div class="downloads-bar__meta">
+                <span>Download usage</span>
+                <span>{{ metadata()?.downloadCount ?? 0 }} / {{ metadata()?.maxDownloads }}</span>
+              </div>
+              <div class="downloads-bar__track">
+                <div
+                  class="downloads-bar__fill"
+                  [style.width.%]="((metadata()?.downloadCount ?? 0) / (metadata()?.maxDownloads ?? 1)) * 100"
+                  [class.downloads-bar__fill--full]="!canDownload()"
+                ></div>
+              </div>
+            </div>
+          }
+
+          <!-- Download CTA -->
+          <button
+            class="download-btn"
+            [class.download-btn--active]="canDownload()"
+            type="button"
+            [disabled]="!canDownload()"
+            (click)="download()"
+          >
+            @if (canDownload()) {
+              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M10 4v8M10 12L7 9M10 12L13 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 16h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+              </svg>
+              Download file
+            } @else {
+              <app-icon name="expired" />
+              Download unavailable
+            }
+          </button>
+
+          @if (canDownload()) {
+            <p class="download-note">
+              This is a temporary link. It will become unavailable after expiration or when the download limit is reached.
+            </p>
+          }
+        </article>
       }
-
-      <button class="download-action" type="button" [disabled]="!availability()?.available" (click)="download()">
-        {{ availability()?.available ? 'Download file' : 'Link not available' }}
-      </button>
-    </article>
-  }
-</section>
+    </div>
+  </div>
+</div>

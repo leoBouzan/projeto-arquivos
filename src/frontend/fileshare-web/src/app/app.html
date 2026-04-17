@@ -1,16 +1,30 @@
 <div class="app-shell">
-  <header class="hero">
-    <div class="hero__content">
-      <p class="hero__eyebrow">Temporary file links</p>
-      <h1>FileShare</h1>
-      <p class="hero__copy">
-        Upload once, define the expiration rules, and publish a disposable link that cleans itself up.
-      </p>
-    </div>
+  <header class="topbar" [class.topbar--scrolled]="isScrolled()">
+    <div class="topbar__inner">
+      <a class="brand" routerLink="/">
+        <span class="brand__icon" aria-hidden="true">
+          <svg viewBox="0 0 28 28" fill="none">
+            <rect x="2" y="2" width="24" height="24" rx="7" fill="currentColor" opacity="0.12"/>
+            <path d="M14 18V10M14 10L10 14M14 10L18 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8 20h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+          </svg>
+        </span>
+        FileShare
+      </a>
 
-    <nav class="hero__nav">
-      <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Upload</a>
-    </nav>
+      <nav class="topbar__nav" aria-label="Main navigation">
+        <a class="nav-link" routerLink="/" routerLinkActive="nav-link--active" [routerLinkActiveOptions]="{ exact: true }">Home</a>
+        <a class="nav-link" routerLink="/upload" routerLinkActive="nav-link--active">Upload</a>
+      </nav>
+
+      <a class="topbar__cta" routerLink="/upload">
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 11V4M8 4L5 7M8 4L11 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3 13h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity="0.6"/>
+        </svg>
+        Share a file
+      </a>
+    </div>
   </header>
 
   <main class="content">

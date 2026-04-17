@@ -1,87 +1,348 @@
-<section class="upload-layout">
-  <article class="panel panel--form">
-    <div class="panel__header">
-      <p class="panel__label">Create link</p>
-      <h2>Upload a file and define the kill switch.</h2>
-      <p>
-        Set the expiration timestamp, cap the number of downloads, and publish a share link that can disappear on
-        schedule.
-      </p>
-    </div>
+<div class="upload-page">
+  <app-floating-background [subtle]="true" />
 
-    <div class="form-grid">
-      <label class="field field--file">
-        <span>File</span>
-        <input type="file" (change)="onFileSelected($event)" />
-        <small>{{ selectedFile()?.name || 'No file selected yet.' }}</small>
-      </label>
-
-      <label class="field">
-        <span>Expires at</span>
-        <input
-          type="datetime-local"
-          [ngModel]="expiresAt()"
-          (ngModelChange)="expiresAt.set($event)"
-        />
-      </label>
-
-      <label class="field">
-        <span>Max downloads</span>
-        <input
-          type="number"
-          min="1"
-          [ngModel]="maxDownloads()"
-          (ngModelChange)="onMaxDownloadsChange($event)"
-        />
-      </label>
-    </div>
-
-    <button class="cta" type="button" [disabled]="isSubmitting()" (click)="submit()">
-      {{ isSubmitting() ? 'Generating...' : 'Generate temporary link' }}
-    </button>
-
-    @if (error()) {
-      <p class="feedback feedback--error">{{ error() }}</p>
-    }
-  </article>
-
-  <aside class="panel panel--result">
-    <div class="panel__header">
-      <p class="panel__label">Result</p>
-      <h2>Link payload</h2>
-      <p>The API response is surfaced here exactly where the frontend needs it.</p>
-    </div>
-
-    @if (response(); as response) {
-      <dl class="result-grid">
-        <div>
-          <dt>Access token</dt>
-          <dd>{{ response.accessToken }}</dd>
-        </div>
-        <div>
-          <dt>Expires at</dt>
-          <dd>{{ response.expiresAt | date: 'medium' }}</dd>
-        </div>
-        <div>
-          <dt>Max downloads</dt>
-          <dd>{{ response.maxDownloads ?? 'Unlimited' }}</dd>
-        </div>
-        <div>
-          <dt>File</dt>
-          <dd>{{ response.fileName }}</dd>
-        </div>
-      </dl>
-
-      <div class="link-stack">
-        <a [href]="response.downloadUrl" target="_blank" rel="noreferrer">Direct download endpoint</a>
-        <a [routerLink]="downloadPreviewPath()">Public download page</a>
-        <a [href]="response.metadataUrl" target="_blank" rel="noreferrer">Metadata endpoint</a>
-        <a [href]="response.availabilityUrl" target="_blank" rel="noreferrer">Availability endpoint</a>
+  <div class="upload-page__inner">
+    <!-- ─── Sidebar ───────────────────────────────────────────── -->
+    <aside class="sidebar fade-in">
+      <div class="sidebar__top">
+        <p class="eyebrow">Ephemeral curator</p>
+        <h2 class="sidebar__title">Share files with<br><span class="text-accent">controlled access</span></h2>
+        <p class="sidebar__copy">
+          Upload once, define access limits, and distribute a secure temporary link with confidence.
+        </p>
       </div>
-    } @else {
-      <div class="placeholder">
-        <p>Your generated link and endpoint URLs will appear here after the upload completes.</p>
+
+      <div class="sidebar__anim">
+        <app-share-animation />
       </div>
-    }
-  </aside>
-</section>
+
+      <ul class="benefits">
+        <li class="benefit">
+          <div class="benefit__icon">
+            <app-icon name="clock" />
+          </div>
+          <div>
+            <p class="benefit__title">Auto-expiration</p>
+            <p class="benefit__desc">Links deactivate automatically at the selected time.</p>
+          </div>
+        </li>
+        <li class="benefit">
+          <div class="benefit__icon">
+            <app-icon name="download" />
+          </div>
+          <div>
+            <p class="benefit__title">Download control</p>
+            <p class="benefit__desc">Limit how many times the file can be retrieved.</p>
+          </div>
+        </li>
+        <li class="benefit">
+          <div class="benefit__icon">
+            <app-icon name="group" />
+          </div>
+          <div>
+            <p class="benefit__title">Secure distribution</p>
+            <p class="benefit__desc">Share directly with teams and external partners.</p>
+          </div>
+        </li>
+      </ul>
+
+      <!-- Recent links -->
+      <section class="recent">
+        <div class="recent__head">
+          <h3 class="recent__title">Recent links</h3>
+          <span class="recent__count">{{ recentLinksPreview().length }} items</span>
+        </div>
+
+        @if (recentLinksPreview().length) {
+          <div class="recent__list">
+            @for (item of recentLinksPreview(); track item.id) {
+              <article class="recent-item">
+                <div class="recent-item__header">
+                  <p class="recent-item__name">{{ item.fileName }}</p>
+                  <app-status-badge
+                    [label]="getResultStatus(item.expiresAt)"
+                    [tone]="getRecentStatusTone(item.expiresAt)"
+                  />
+                </div>
+                <p class="recent-item__meta">
+                  {{ formatRecentExpiry(item.expiresAt) }} · Max {{ item.maxDownloads ?? 'unlimited' }} downloads
+                </p>
+                <div class="recent-item__actions">
+                  <button type="button" (click)="copyLink(item.publicLink, 'Recent public link')">
+                    <app-icon name="copy" />
+                    Copy
+                  </button>
+                  <a [href]="item.publicLink" target="_blank" rel="noreferrer">
+                    <app-icon name="open" />
+                    Open
+                  </a>
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
+          <p class="recent__empty">Generated links will appear here for quick access.</p>
+        }
+      </section>
+    </aside>
+
+    <!-- ─── Main workspace ───────────────────────────────────── -->
+    <div class="workspace">
+      <!-- Upload form card -->
+      <article class="card fade-in fade-in--delay-1">
+        <div class="card__header">
+          <p class="eyebrow">Create secure link</p>
+          <h3 class="card__title">Upload and configure access</h3>
+        </div>
+
+        <!-- File input -->
+        <div class="field">
+          <span class="field__label">
+            <app-icon name="file" />
+            File
+          </span>
+          <input #fileInput class="file-native" type="file" (change)="onFileSelected($event)" />
+          <div
+            class="dropzone"
+            role="button"
+            tabindex="0"
+            [class.dropzone--drag]="isDragOver()"
+            [class.dropzone--filled]="selectedFile()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+            (click)="fileInput.click()"
+            (keydown.enter)="fileInput.click()"
+            (keydown.space)="fileInput.click(); $event.preventDefault()"
+          >
+            <div class="dropzone__inner">
+              <div class="dropzone__icon-wrap" [class.dropzone__icon-wrap--filled]="selectedFile()">
+                <app-icon [name]="selectedFile() ? selectedFileIcon() : 'upload'" />
+              </div>
+              <div>
+                <p class="dropzone__title">
+                  {{ selectedFile() ? 'File selected' : 'Drop a file here or click to upload' }}
+                </p>
+                <p class="dropzone__sub">
+                  @if (selectedFile(); as file) {
+                    {{ file.name }}
+                  } @else {
+                    Any common file type is supported
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+
+          @if (selectedFile(); as file) {
+            <div class="file-chip slide-in" aria-live="polite">
+              <div class="file-chip__info">
+                <p class="file-chip__name">{{ file.name }}</p>
+                <p class="file-chip__meta">
+                  {{ selectedFileTypeLabel() }} · {{ selectedFileExtension() }} · {{ formatFileSize(file.size) }}
+                </p>
+              </div>
+              <button type="button" class="icon-btn" (click)="removeSelectedFile(fileInput)" title="Remove file">
+                <app-icon name="delete" />
+              </button>
+            </div>
+
+            <div class="file-preview slide-in">
+              @if (previewMode() === 'image') {
+                <img class="file-preview__img" [src]="filePreviewUrl()" [alt]="'Preview of ' + file.name" />
+              } @else if (previewMode() === 'pdf') {
+                <div class="file-preview__fallback">
+                  <app-icon name="pdf" />
+                  <p>PDF selected — ready to generate link.</p>
+                </div>
+              } @else {
+                <div class="file-preview__fallback">
+                  <app-icon [name]="selectedFileIcon()" />
+                  <p>{{ selectedFileTypeLabel() }} selected — ready to generate link.</p>
+                </div>
+              }
+            </div>
+          } @else {
+            <small class="field__hint">No file selected yet.</small>
+          }
+        </div>
+
+        <!-- Config grid -->
+        <div class="config-grid">
+          <label class="field">
+            <span class="field__label">
+              <app-icon name="clock" />
+              Expires at
+            </span>
+            <input type="datetime-local" [ngModel]="expiresAt()" (ngModelChange)="expiresAt.set($event)" />
+            <div class="preset-pills">
+              @for (preset of expirationPresets; track preset.label) {
+                <button type="button" class="pill" (click)="applyExpirationPreset(preset.hours)">{{ preset.label }}</button>
+              }
+            </div>
+            <small class="field__hint">Access revokes automatically at this time.</small>
+          </label>
+
+          <label class="field">
+            <span class="field__label">
+              <app-icon name="download" />
+              Max downloads
+            </span>
+            <input type="number" min="1" [ngModel]="maxDownloads()" (ngModelChange)="onMaxDownloadsChange($event)" />
+            <div class="preset-pills">
+              @for (limit of downloadPresets; track limit) {
+                <button type="button" class="pill" (click)="applyDownloadPreset(limit)">{{ limit }}</button>
+              }
+            </div>
+            <small class="field__hint">Link disables once this limit is reached.</small>
+          </label>
+        </div>
+
+        <!-- Config summary -->
+        @if (selectedFile()) {
+          <div class="config-summary slide-in">
+            <div class="config-summary__item">
+              <app-icon name="clock" />
+              <span>{{ resultTimeLeft() || 'Set expiry above' }}</span>
+            </div>
+            <span class="config-summary__sep">·</span>
+            <div class="config-summary__item">
+              <app-icon name="download" />
+              <span>{{ maxDownloads() ? maxDownloads() + ' max downloads' : 'Unlimited downloads' }}</span>
+            </div>
+          </div>
+        }
+
+        <!-- CTA -->
+        <button
+          class="cta-btn"
+          type="button"
+          [class.cta-btn--ready]="canSubmit()"
+          [disabled]="!canSubmit()"
+          (click)="submit()"
+        >
+          @if (isSubmitting()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Generating link...
+          } @else {
+            <app-icon name="link" />
+            Generate temporary link
+          }
+        </button>
+
+        @if (error()) {
+          <p class="feedback feedback--error" role="alert">
+            <app-icon name="error" />
+            {{ error() }}
+          </p>
+        }
+      </article>
+
+      <!-- Result card -->
+      <article class="card fade-in fade-in--delay-2">
+        <div class="card__header">
+          <p class="eyebrow">Upload result</p>
+          <h3 class="card__title">Share link details</h3>
+        </div>
+
+        @if (isSubmitting()) {
+          <div class="skeleton-block">
+            <div class="skeleton skeleton--title"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton skeleton--sm"></div>
+          </div>
+        } @else if (error()) {
+          <div class="state-block state-block--error">
+            <app-icon name="error" />
+            <p>Could not generate the link. Check your settings and try again.</p>
+          </div>
+        } @else if (response(); as res) {
+          <div class="result slide-in">
+            <!-- File summary -->
+            <div class="result-file">
+              <div class="result-file__icon">
+                <app-icon [name]="getFileIconFromName(res.fileName)" />
+              </div>
+              <div class="result-file__info">
+                <p class="result-file__name">{{ res.fileName }}</p>
+                <app-status-badge
+                  [label]="getResultStatus(res.expiresAt)"
+                  [tone]="getResultStatusTone(res.expiresAt)"
+                />
+              </div>
+            </div>
+
+            <!-- Stats grid -->
+            <dl class="result-stats">
+              <div class="result-stat">
+                <dt>Expires at</dt>
+                <dd>{{ res.expiresAt | date: 'medium' }}</dd>
+              </div>
+              <div class="result-stat">
+                <dt>Time left</dt>
+                <dd>{{ resultTimeLeft() }}</dd>
+              </div>
+              <div class="result-stat">
+                <dt>Max downloads</dt>
+                <dd>{{ res.maxDownloads ?? 'Unlimited' }}</dd>
+              </div>
+              <div class="result-stat">
+                <dt>Access token</dt>
+                <dd>{{ compactToken(res.accessToken) }}</dd>
+              </div>
+            </dl>
+
+            <!-- Validity bar -->
+            <div class="validity-bar">
+              <div class="validity-bar__meta">
+                <span>Link validity</span>
+                <span class="validity-bar__pct">{{ resultValidityPercent() }}%</span>
+              </div>
+              <div class="validity-bar__track">
+                <div
+                  class="validity-bar__fill"
+                  [style.width.%]="resultValidityPercent()"
+                  [class.validity-bar__fill--warning]="resultValidityPercent() < 30"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Copy fields -->
+            <div class="result-links">
+              <app-copy-field label="Public link" icon="link" [value]="publicLink()" [openHref]="publicLink()" />
+              <app-copy-field label="Direct download" icon="download" [value]="res.downloadUrl" [openHref]="res.downloadUrl" />
+            </div>
+
+            <!-- Actions -->
+            <div class="result-actions">
+              <button type="button" class="ghost-btn" (click)="copyAll(res)">
+                <app-icon name="copy" />
+                Copy details
+              </button>
+              <a class="ghost-btn" [href]="publicLink()" target="_blank" rel="noreferrer">
+                <app-icon name="open" />
+                Open public page
+              </a>
+              <button type="button" class="ghost-btn" (click)="resetGeneratedResult(fileInput)">
+                <app-icon name="upload" />
+                New link
+              </button>
+            </div>
+
+            @if (copyFeedback()) {
+              <p class="feedback feedback--success" aria-live="polite">
+                <app-icon name="success" />
+                {{ copyFeedback() }}
+              </p>
+            }
+          </div>
+        } @else {
+          <div class="state-block state-block--empty">
+            <app-share-animation />
+            <p>Your generated links and delivery endpoints will appear here.</p>
+          </div>
+        }
+      </article>
+    </div>
+  </div>
+</div>
