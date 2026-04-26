@@ -7,6 +7,15 @@ public sealed record TransferProofContract(
     string Signature,
     DateTimeOffset IssuedAt);
 
+public sealed record MalwareScanContract(
+    string Status,
+    int? MaliciousCount,
+    int? SuspiciousCount,
+    int? TotalEngines,
+    DateTimeOffset? ScannedAt,
+    string? Permalink,
+    bool IsEmulated);
+
 public sealed record UploadFileResponse(
     Guid Id,
     string AccessToken,
@@ -15,6 +24,7 @@ public sealed record UploadFileResponse(
     int? MaxDownloads,
     bool HasPassword,
     TransferProofContract Proof,
+    MalwareScanContract Scan,
     string MetadataUrl,
     string AvailabilityUrl,
     string DownloadUrl);
@@ -30,7 +40,8 @@ public sealed record FileMetadataResponse(
     int? MaxDownloads,
     string Status,
     bool HasPassword,
-    TransferProofContract Proof);
+    TransferProofContract Proof,
+    MalwareScanContract Scan);
 
 public sealed record FileAvailabilityResponse(
     bool Available,

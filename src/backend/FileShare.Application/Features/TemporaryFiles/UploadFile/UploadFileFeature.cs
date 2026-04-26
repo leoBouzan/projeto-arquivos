@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using FileShare.Application.Abstractions.Persistence;
+using FileShare.Application.Abstractions.Scanning;
 using FileShare.Application.Abstractions.Security;
 using FileShare.Application.Abstractions.Storage;
 using FileShare.Application.Abstractions.Time;
@@ -27,7 +28,8 @@ public sealed record UploadFileResponse(
     DateTimeOffset ExpiresAt,
     int? MaxDownloads,
     bool HasPassword,
-    TransferProofDto Proof);
+    TransferProofDto Proof,
+    MalwareScanDto Scan);
 
 public sealed record TransferProofDto(
     string FileHash,
@@ -35,6 +37,15 @@ public sealed record TransferProofDto(
     string BlockHash,
     string Signature,
     DateTimeOffset IssuedAt);
+
+public sealed record MalwareScanDto(
+    string Status,
+    int? MaliciousCount,
+    int? SuspiciousCount,
+    int? TotalEngines,
+    DateTimeOffset? ScannedAt,
+    string? Permalink,
+    bool IsEmulated);
 
 public sealed class UploadFileCommandValidator : AbstractValidator<UploadFileCommand>
 {
@@ -57,17 +68,23 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
     private readonly IFileStorage _fileStorage;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IMalwareScanner _malwareScanner;
+    private readonly IMalwareScanPolicy _malwareScanPolicy;
 
     public UploadFileCommandHandler(
         IFileRepository fileRepository,
         IFileStorage fileStorage,
         IDateTimeProvider dateTimeProvider,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IMalwareScanner malwareScanner,
+        IMalwareScanPolicy malwareScanPolicy)
     {
         _fileRepository = fileRepository;
         _fileStorage = fileStorage;
         _dateTimeProvider = dateTimeProvider;
         _passwordHasher = passwordHasher;
+        _malwareScanner = malwareScanner;
+        _malwareScanPolicy = malwareScanPolicy;
     }
 
     public async Task<Result<UploadFileResponse>> Handle(UploadFileCommand request, CancellationToken cancellationToken)
@@ -91,6 +108,13 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
         var (hashStream, fileHash) = await BufferAndHashAsync(request.Content, cancellationToken);
         await using (hashStream)
         {
+            var scanResult = await _malwareScanner.ScanByHashAsync(fileHash, cancellationToken);
+
+            if (scanResult.Status == MalwareScanStatus.Malicious && _malwareScanPolicy.BlockOnMalicious)
+            {
+                return Result<UploadFileResponse>.Failure(TemporaryFileErrors.MalwareDetected);
+            }
+
             var proofResult = TransferProof.Create(fileHash, now);
             if (proofResult.IsFailure)
             {
@@ -118,6 +142,15 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
                 return Result<UploadFileResponse>.Failure(aggregateResult.Errors);
             }
 
+            aggregateResult.Value.ApplyMalwareScanResult(
+                scanResult.Status,
+                scanResult.MaliciousCount,
+                scanResult.SuspiciousCount,
+                scanResult.TotalEngines,
+                scanResult.AnalyzedAt ?? now,
+                scanResult.Permalink,
+                scanResult.IsEmulated);
+
             await _fileStorage.UploadAsync(storageObjectKeyResult.Value, hashStream, request.ContentType, cancellationToken);
             await _fileRepository.AddAsync(aggregateResult.Value, cancellationToken);
 
@@ -134,7 +167,15 @@ public sealed class UploadFileCommandHandler : IRequestHandler<UploadFileCommand
                     aggregate.BlockNumber,
                     aggregate.BlockHash,
                     aggregate.Signature,
-                    aggregate.ProofIssuedAt)));
+                    aggregate.ProofIssuedAt),
+                new MalwareScanDto(
+                    aggregate.ScanStatus.ToString(),
+                    aggregate.ScanMaliciousCount,
+                    aggregate.ScanSuspiciousCount,
+                    aggregate.ScanTotalEngines,
+                    aggregate.ScannedAt,
+                    aggregate.ScanPermalink,
+                    aggregate.ScanIsEmulated)));
         }
     }
 

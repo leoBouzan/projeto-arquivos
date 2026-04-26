@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using DotNetEnv;
 using FileShare.API.Configuration;
 using FileShare.Application;
 using FileShare.API.Middleware;
@@ -7,12 +8,50 @@ using FileShare.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.RateLimiting;
 
+// Load environment variables from a `.env` file at the repository root.
+// This file is git-ignored — sensitive keys (e.g. VIRUSTOTAL_API_KEY) live there.
+// If the file is absent, no error is thrown — the app falls back to its default behavior
+// (e.g. an emulated malware scanner when no VirusTotal key is provided).
+foreach (var candidate in new[] { ".env", "../.env", "../../.env", "../../../.env", "../../../../.env" })
+{
+    var fullPath = Path.GetFullPath(candidate);
+    if (File.Exists(fullPath))
+    {
+        Env.Load(fullPath);
+        break;
+    }
+}
+
 var builder = WebApplication.CreateBuilder(args);
 var securityOptions = builder.Configuration.GetSection(SecurityOptions.SectionName).Get<SecurityOptions>() ?? new SecurityOptions();
 
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails();
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "FileShare API",
+        Version = "v1",
+        Description =
+            "API do FileShare - sistema de compartilhamento temporario de arquivos com expiracao, " +
+            "limite de downloads, prova de transferencia (hash + assinatura) e escaneamento antivirus " +
+            "via VirusTotal (com fallback emulado quando a chave nao esta configurada).",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+            Name = "Repositorio",
+            Url = new Uri("https://github.com/LCGant/projeto-arquivos")
+        }
+    });
+
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+});
 builder.Services.Configure<SecurityOptions>(builder.Configuration.GetSection(SecurityOptions.SectionName));
 builder.Services.Configure<FormOptions>(options =>
 {
@@ -70,10 +109,13 @@ app.UseMiddleware<UnhandledExceptionMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseMiddleware<DeviceFingerprintMiddleware>();
 
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.MapOpenApi();
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "FileShare API v1");
+    options.DocumentTitle = "FileShare API - Swagger";
+    options.RoutePrefix = "swagger";
+});
 
 app.UseRouting();
 app.UseCors("frontend");

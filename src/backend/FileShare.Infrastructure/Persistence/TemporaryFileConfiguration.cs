@@ -34,9 +34,18 @@ public sealed class TemporaryFileConfiguration : IEntityTypeConfiguration<Tempor
         builder.Property(x => x.Signature).HasMaxLength(256).IsRequired();
         builder.Property(x => x.ProofIssuedAt).IsRequired();
 
+        builder.Property(x => x.ScanStatus).HasConversion<int>().IsRequired();
+        builder.Property(x => x.ScanMaliciousCount);
+        builder.Property(x => x.ScanSuspiciousCount);
+        builder.Property(x => x.ScanTotalEngines);
+        builder.Property(x => x.ScannedAt);
+        builder.Property(x => x.ScanPermalink).HasMaxLength(512);
+        builder.Property(x => x.ScanIsEmulated).IsRequired();
+
         builder.HasIndex(x => x.AccessToken).IsUnique();
         builder.HasIndex(x => new { x.Status, x.ExpiresAt });
         builder.HasIndex(x => x.CreatedAt);
         builder.HasIndex(x => x.FileHash);
+        builder.HasIndex(x => x.ScanStatus);
     }
 }

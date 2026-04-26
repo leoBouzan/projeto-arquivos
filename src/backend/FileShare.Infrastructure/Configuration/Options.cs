@@ -17,3 +17,18 @@ public sealed class StorageOptions
 
     public string RootPath { get; set; } = "App_Data/storage";
 }
+
+public sealed class VirusTotalOptions
+{
+    public const string SectionName = "VirusTotal";
+
+    public string? ApiKey { get; set; }
+
+    public int MaliciousThreshold { get; set; } = 3;
+
+    public bool BlockOnMalicious { get; set; } = true;
+
+    public int TimeoutSeconds { get; set; } = 15;
+
+    public int CacheMinutes { get; set; } = 60;
+}

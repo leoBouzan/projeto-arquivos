@@ -20,7 +20,8 @@ public sealed record FileMetadataDto(
     int? MaxDownloads,
     string Status,
     bool HasPassword,
-    TransferProofDto Proof);
+    TransferProofDto Proof,
+    MalwareScanDto Scan);
 
 public sealed class GetFileMetadataQueryHandler : IRequestHandler<GetFileMetadataQuery, Result<FileMetadataDto>>
 {
@@ -55,6 +56,14 @@ public sealed class GetFileMetadataQueryHandler : IRequestHandler<GetFileMetadat
                 temporaryFile.BlockNumber,
                 temporaryFile.BlockHash,
                 temporaryFile.Signature,
-                temporaryFile.ProofIssuedAt)));
+                temporaryFile.ProofIssuedAt),
+            new MalwareScanDto(
+                temporaryFile.ScanStatus.ToString(),
+                temporaryFile.ScanMaliciousCount,
+                temporaryFile.ScanSuspiciousCount,
+                temporaryFile.ScanTotalEngines,
+                temporaryFile.ScannedAt,
+                temporaryFile.ScanPermalink,
+                temporaryFile.ScanIsEmulated)));
     }
 }

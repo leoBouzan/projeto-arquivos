@@ -32,6 +32,7 @@ public static class TemporaryFileErrors
     public static readonly Error PasswordRequired = new("temporary_file.password_required", "This file is password protected.", ErrorType.Validation);
     public static readonly Error PasswordInvalid = new("temporary_file.password_invalid", "The provided password is incorrect.", ErrorType.Validation);
     public static readonly Error InvalidFileHash = new("temporary_file.invalid_file_hash", "The file hash is invalid.", ErrorType.Validation);
+    public static readonly Error MalwareDetected = new("temporary_file.malware_detected", "The uploaded file was flagged as malicious by the antivirus scan.", ErrorType.Validation);
 }
 
 public sealed class TemporaryFile : AggregateRoot
@@ -115,6 +116,20 @@ public sealed class TemporaryFile : AggregateRoot
     public string Signature { get; private set; } = string.Empty;
 
     public DateTimeOffset ProofIssuedAt { get; private set; }
+
+    public MalwareScanStatus ScanStatus { get; private set; } = MalwareScanStatus.Unscanned;
+
+    public int? ScanMaliciousCount { get; private set; }
+
+    public int? ScanSuspiciousCount { get; private set; }
+
+    public int? ScanTotalEngines { get; private set; }
+
+    public DateTimeOffset? ScannedAt { get; private set; }
+
+    public string? ScanPermalink { get; private set; }
+
+    public bool ScanIsEmulated { get; private set; }
 
     public bool HasPassword => !string.IsNullOrEmpty(PasswordHash);
 
@@ -242,5 +257,23 @@ public sealed class TemporaryFile : AggregateRoot
     public void MarkStorageDeleted(DateTimeOffset now)
     {
         StorageDeletedAt ??= now;
+    }
+
+    public void ApplyMalwareScanResult(
+        MalwareScanStatus status,
+        int maliciousCount,
+        int suspiciousCount,
+        int totalEngines,
+        DateTimeOffset scannedAt,
+        string? permalink,
+        bool isEmulated)
+    {
+        ScanStatus = status;
+        ScanMaliciousCount = maliciousCount;
+        ScanSuspiciousCount = suspiciousCount;
+        ScanTotalEngines = totalEngines;
+        ScannedAt = scannedAt;
+        ScanPermalink = permalink;
+        ScanIsEmulated = isEmulated;
     }
 }

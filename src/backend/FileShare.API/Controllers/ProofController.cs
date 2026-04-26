@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FileShare.API.Controllers;
 
+/// <summary>
+/// Verificacao publica da Proof of Transfer - permite que terceiros confirmem a integridade do arquivo.
+/// </summary>
 [ApiController]
 [Route("api/proof")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
@@ -19,6 +22,10 @@ public sealed class ProofController : ControllerBase
         _sender = sender;
     }
 
+    /// <summary>
+    /// Localiza um arquivo a partir do prefixo do hash SHA-256 e retorna a Proof of Transfer associada.
+    /// </summary>
+    /// <param name="hashPrefix">Prefixo (8+ caracteres) do SHA-256 do arquivo a verificar.</param>
     [HttpGet("{hashPrefix}")]
     [ProducesResponseType(typeof(VerifyProofResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
